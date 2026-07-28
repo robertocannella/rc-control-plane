@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 
 export default async function Home() {
@@ -7,8 +8,10 @@ export default async function Home() {
   if (!session?.user) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-6">
-        <h1 className="text-2xl font-semibold">rc-control-plane</h1>
+        <h1 className="text-2xl font-semibold">Roberto Cannella</h1>
+        <h2 className="text-lg text-gray-600">Docs, Ideas, and Tools.</h2>
         <form
+
           action={async () => {
             "use server";
             await signIn("google");
@@ -37,6 +40,11 @@ export default async function Home() {
         />
       )}
       <p className="text-lg">Signed in as {session.user.email}</p>
+      {session.user.role === "admin" && (
+        <Link href="/admin" className="text-sm underline">
+          Admin panel
+        </Link>
+      )}
       <form
         action={async () => {
           "use server";
