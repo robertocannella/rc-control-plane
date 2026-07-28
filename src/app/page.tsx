@@ -40,7 +40,7 @@ export default async function Home() {
         />
       )}
       <p className="text-lg">Signed in as {session.user.email}</p>
-      {session.user.role === "admin" && (
+      {session.user.scopes.includes("admin") && (
         <Link href="/admin" className="text-sm underline">
           Admin panel
         </Link>
