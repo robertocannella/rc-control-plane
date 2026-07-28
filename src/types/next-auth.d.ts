@@ -1,16 +1,17 @@
 import type { DefaultSession } from "next-auth";
-import type { Role } from "@/lib/users";
+import type { Scope } from "@/lib/scopes";
 
 declare module "@auth/core/types" {
   interface Session {
     user: {
-      role: Role;
+      id: string;
+      scopes: Scope[];
     } & DefaultSession["user"];
   }
 }
 
 declare module "@auth/core/jwt" {
   interface JWT {
-    role?: Role;
+    scopes?: Scope[];
   }
 }

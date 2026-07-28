@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 
 export default async function AdminPage() {
@@ -8,7 +9,7 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  if (session.user.role !== "admin") {
+  if (!session.user.scopes.includes("admin")) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-semibold">Access denied</h1>
@@ -23,6 +24,9 @@ export default async function AdminPage() {
     <main className="flex flex-1 flex-col items-center justify-center gap-4">
       <h1 className="text-2xl font-semibold">Admin panel</h1>
       <p className="text-gray-600">Signed in as {session.user.email}</p>
+      <Link href="/admin/users" className="text-sm underline">
+        Manage users
+      </Link>
     </main>
   );
 }

@@ -1,33 +1,71 @@
 import { firestore } from "@/lib/firestore";
+import { SCOPES, type Scope } from "@/lib/scopes";
 
-export type Role = "admin" | "user";
+export interface AppUser {
+  id: string;
+  email: string;
+  name: string | null;
+  scopes: Scope[];
+}
 
 interface UserRecord {
   email: string;
   name: string | null;
-  role: Role;
+  scopes?: Scope[];
   createdAt: FirebaseFirestore.Timestamp;
 }
 
-export async function getOrCreateUserRole(params: {
+function sanitizeScopes(scopes: unknown): Scope[] {
+  if (!Array.isArray(scopes)) return [];
+  return scopes.filter((scope): scope is Scope =>
+    (SCOPES as readonly string[]).includes(scope),
+  );
+}
+
+export async function getOrCreateUserScopes(params: {
   id: string;
   email: string;
   name: string | null;
-}): Promise<Role> {
+}): Promise<Scope[]> {
   const ref = firestore.collection("users").doc(params.id);
   const snapshot = await ref.get();
 
   if (snapshot.exists) {
-    return (snapshot.data() as UserRecord).role;
+    return sanitizeScopes((snapshot.data() as UserRecord).scopes);
   }
 
-  const role: Role = "user";
   await ref.set({
     email: params.email,
     name: params.name,
-    role,
+    scopes: [],
     createdAt: new Date(),
   });
 
-  return role;
+  return [];
+}
+
+export async function getUserScopes(id: string): Promise<Scope[]> {
+  const snapshot = await firestore.collection("users").doc(id).get();
+  if (!snapshot.exists) return [];
+  return sanitizeScopes((snapshot.data() as UserRecord).scopes);
+}
+
+export async function listUsers(): Promise<AppUser[]> {
+  const snapshot = await firestore.collection("users").orderBy("email").get();
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() as UserRecord;
+    return {
+      id: doc.id,
+      email: data.email,
+      name: data.name,
+      scopes: sanitizeScopes(data.scopes),
+    };
+  });
+}
+
+export async function setUserScopes(
+  id: string,
+  scopes: Scope[],
+): Promise<void> {
+  await firestore.collection("users").doc(id).update({ scopes });
 }
