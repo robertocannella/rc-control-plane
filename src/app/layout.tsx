@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "rc-control-plane",
+  title: "Roberto Cannella",
   description: "Sign in with Google",
 };
 
