@@ -18,10 +18,10 @@ A [Next.js](https://nextjs.org) app with Google sign-in via [Auth.js (NextAuth.j
 
    ```bash
    cp .env.local.example .env.local
-   npx auth secret # writes AUTH_SECRET into .env.local
    ```
 
-   Then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from step 2.
+   Set `AUTH_SECRET` to the output of `openssl rand -base64 33`, and set
+   `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` from step 2.
 
 4. Run the development server:
 
