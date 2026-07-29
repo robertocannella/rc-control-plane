@@ -1,6 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
-import { auth, signIn, signOut } from "@/auth";
+import { auth, signIn } from "@/auth";
 
 export default async function Home() {
   const session = await auth();
@@ -40,24 +39,6 @@ export default async function Home() {
         />
       )}
       <p className="text-lg">Signed in as {session.user.email}</p>
-      {session.user.scopes.includes("admin") && (
-        <Link href="/admin" className="text-sm underline">
-          Admin panel
-        </Link>
-      )}
-      <form
-        action={async () => {
-          "use server";
-          await signOut();
-        }}
-      >
-        <button
-          type="submit"
-          className="rounded-md border px-4 py-2 hover:bg-gray-100"
-        >
-          Sign out
-        </button>
-      </form>
     </main>
   );
 }
