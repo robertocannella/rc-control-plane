@@ -3,6 +3,10 @@ import type { FieldDef } from "@/lib/post-types";
 export function formatFieldValue(type: FieldDef["type"], value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (type === "boolean") return value ? "Yes" : "No";
+  if (type === "richtext" && typeof value === "string") {
+    const stripped = value.replace(/<[^>]*>/g, "").trim();
+    return stripped || "—";
+  }
   return String(value);
 }
 
@@ -19,6 +23,15 @@ export function PostFieldDisplay({
         <p className="whitespace-pre-wrap">
           {typeof value === "string" && value ? value : "—"}
         </p>
+      );
+    case "richtext":
+      return typeof value === "string" && value ? (
+        <div
+          className="richtext-content"
+          dangerouslySetInnerHTML={{ __html: value }}
+        />
+      ) : (
+        <p className="text-gray-500">—</p>
       );
     case "boolean":
       return <p>{value ? "Yes" : "No"}</p>;

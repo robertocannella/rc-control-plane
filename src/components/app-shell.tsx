@@ -142,8 +142,10 @@ export function AppShell({
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="min-w-0 flex-1 overflow-auto pb-16 md:pb-0">
+      {/* Main content: scrolls with the actual document on mobile (so the
+          browser chrome can auto-hide), but scrolls internally at md+ so
+          the sidebar stays pinned. */}
+      <main className="min-w-0 flex-1 pb-16 md:overflow-auto md:pb-0">
         {children}
       </main>
 

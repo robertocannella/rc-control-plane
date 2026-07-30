@@ -36,3 +36,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Tailwind's preflight resets list/paragraph/heading styling, which also
+   strips it from rich-text HTML rendered via dangerouslySetInnerHTML.
+   Restore just enough for what the editor's toolbar can produce. */
+.richtext-content :where(p) {
+  margin-block: 0.75em;
+}
+.richtext-content :where(ul, ol) {
+  margin-block: 0.75em;
+  padding-inline-start: 1.5em;
+}
+.richtext-content :where(ul) {
+  list-style-type: disc;
+}
+.richtext-content :where(ol) {
+  list-style-type: decimal;
+}
+.richtext-content :where(li) {
+  margin-block: 0.25em;
+}
+.richtext-content :where(a) {
+  text-decoration: underline;
+}

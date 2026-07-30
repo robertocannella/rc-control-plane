@@ -1,6 +1,7 @@
 export type FieldType =
   | "text"
   | "longtext"
+  | "richtext"
   | "number"
   | "date"
   | "boolean"
@@ -17,6 +18,7 @@ export interface FieldTypeMeta {
 export const FIELD_TYPES: FieldTypeMeta[] = [
   { value: "text", label: "Text (single line)", hasOptions: false },
   { value: "longtext", label: "Long text", hasOptions: false },
+  { value: "richtext", label: "Rich text", hasOptions: false },
   { value: "number", label: "Number", hasOptions: false },
   { value: "date", label: "Date", hasOptions: false },
   { value: "boolean", label: "Yes / No", hasOptions: false },
@@ -48,6 +50,7 @@ export function coerceFieldValue(
     }
     case "text":
     case "longtext":
+    case "richtext":
     case "date":
     case "image":
     case "link":

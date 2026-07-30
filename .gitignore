@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# self-hosted TinyMCE assets, copied from node_modules/tinymce (see scripts/copy-tinymce.js)
+/public/tinymce/
+
 # production
 /build
 
