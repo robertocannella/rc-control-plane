@@ -3,17 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copy-tinymce.js && next dev",
+    "build": "node scripts/copy-tinymce.js && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@google-cloud/firestore": "^8.7.0",
+    "@tinymce/tinymce-react": "^6.3.0",
     "next": "16.2.12",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tinymce": "^8.8.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -28,26 +28,30 @@ export default async function PostDetailPage({
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
-      <h1 className="text-2xl font-semibold">{postType.label}</h1>
-      <div className="flex w-full max-w-2xl flex-col gap-4">
+      <div className="flex w-full max-w-2xl items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">{postType.label}</h1>
+        {editable && (
+          <div className="flex shrink-0 items-center gap-4">
+            <Link
+              href={`/content/${slug}/${post.id}/edit`}
+              className="text-sm underline"
+            >
+              Edit
+            </Link>
+            <PostDeleteButton slug={slug} postId={post.id} />
+          </div>
+        )}
+      </div>
+      <div className="flex w-full max-w-2xl flex-col divide-y divide-black/10 rounded-md border dark:divide-white/10">
         {postType.fields.map((field) => (
-          <div key={field.key}>
-            <div className="text-sm font-medium">{field.label}</div>
+          <div key={field.key} className="flex flex-col gap-1 px-4 py-3">
+            <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+              {field.label}
+            </span>
             <PostFieldDisplay field={field} value={post.values[field.key]} />
           </div>
         ))}
       </div>
-      {editable && (
-        <div className="flex gap-4">
-          <Link
-            href={`/content/${slug}/${post.id}/edit`}
-            className="text-sm underline"
-          >
-            Edit
-          </Link>
-          <PostDeleteButton slug={slug} postId={post.id} />
-        </div>
-      )}
     </main>
   );
 }

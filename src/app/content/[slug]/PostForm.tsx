@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/post-types";
 import type { Post } from "@/lib/posts";
 import { useToast } from "@/components/toast-provider";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   createPostAction,
   updatePostAction,
@@ -40,7 +41,7 @@ export function PostForm({
   return (
     <form
       action={formAction}
-      className="flex w-full max-w-2xl flex-col gap-4"
+      className="flex w-full max-w-2xl flex-col gap-6 rounded-md border p-6"
     >
       {fields.map((field) => (
         <div key={field.key} className="flex flex-col gap-1">
@@ -77,6 +78,13 @@ function renderInput(field: FieldDef, value: unknown) {
           required={field.required}
           rows={4}
           className={common}
+        />
+      );
+    case "richtext":
+      return (
+        <RichTextEditor
+          name={field.key}
+          initialValue={typeof value === "string" ? value : ""}
         />
       );
     case "number":
