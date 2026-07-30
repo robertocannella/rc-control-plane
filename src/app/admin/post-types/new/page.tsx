@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
+import { PostTypeForm } from "../PostTypeForm";
 
-export default async function AdminPage() {
+export default async function NewPostTypePage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -21,15 +21,9 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4">
-      <h1 className="text-2xl font-semibold">Admin panel</h1>
-      <p className="text-gray-600">Signed in as {session.user.email}</p>
-      <Link href="/admin/users" className="text-sm underline">
-        Manage users
-      </Link>
-      <Link href="/admin/post-types" className="text-sm underline">
-        Manage post types
-      </Link>
+    <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
+      <h1 className="text-2xl font-semibold">New post type</h1>
+      <PostTypeForm mode="create" />
     </main>
   );
 }

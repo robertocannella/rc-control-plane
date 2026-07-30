@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getUserScopes, setUserScopes } from "@/lib/users";
-import { SCOPES, type Scope } from "@/lib/scopes";
+import { SCOPES, isPostTypeScope, type Scope } from "@/lib/scopes";
 
 export interface UpdateScopesState {
   status: "idle" | "success" | "error";
@@ -25,8 +25,13 @@ export async function updateUserScopes(
 
   const previousScopes = await getUserScopes(userId);
 
-  const submitted = formData.getAll("scopes");
-  let scopes: Scope[] = SCOPES.filter((scope) => submitted.includes(scope));
+  const submitted = formData
+    .getAll("scopes")
+    .filter((scope): scope is string => typeof scope === "string");
+  let scopes: Scope[] = [
+    ...SCOPES.filter((scope) => submitted.includes(scope)),
+    ...submitted.filter(isPostTypeScope),
+  ];
 
   // Never let an admin remove their own admin scope: there's no other way
   // to regain it short of editing Firestore directly.
@@ -36,6 +41,7 @@ export async function updateUserScopes(
 
   await setUserScopes(userId, scopes);
   revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
 
   const wasAdmin = previousScopes.includes("admin");
   const isAdmin = scopes.includes("admin");
