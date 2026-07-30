@@ -18,8 +18,9 @@ interface AppShellUser {
 interface AppShellProps {
   children: ReactNode;
   navItems: NavItem[];
-  user: AppShellUser;
-  signOutAction: () => void;
+  user?: AppShellUser;
+  signOutAction?: () => void;
+  signInAction?: () => void;
 }
 
 // Bottom bar shows the first few items directly; "Menu" always expands the rest
@@ -39,6 +40,7 @@ export function AppShell({
   navItems,
   user,
   signOutAction,
+  signInAction,
 }: AppShellProps) {
   const pathname = usePathname();
   const [tabletExpanded, setTabletExpanded] = useState(false);
@@ -91,34 +93,52 @@ export function AppShell({
           ))}
         </nav>
         <div className="flex flex-col gap-1 border-t border-black/10 px-2 py-2 dark:border-white/10">
-          <div className="flex items-center gap-3 px-2 py-2 text-sm">
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt=""
-                className="h-6 w-6 shrink-0 rounded-full"
-              />
-            ) : (
-              <NavIcon label={user.name ?? user.email ?? "?"} />
-            )}
-            <span
-              className={`truncate ${tabletExpanded ? "inline" : "hidden lg:inline"}`}
-            >
-              {user.name ?? user.email}
-            </span>
-          </div>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              <NavIcon label="Sign out" />
-              <span className={tabletExpanded ? "inline" : "hidden lg:inline"}>
-                Sign out
-              </span>
-            </button>
-          </form>
+          {user ? (
+            <>
+              <div className="flex items-center gap-3 px-2 py-2 text-sm">
+                {user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.image}
+                    alt=""
+                    className="h-6 w-6 shrink-0 rounded-full"
+                  />
+                ) : (
+                  <NavIcon label={user.name ?? user.email ?? "?"} />
+                )}
+                <span
+                  className={`truncate ${tabletExpanded ? "inline" : "hidden lg:inline"}`}
+                >
+                  {user.name ?? user.email}
+                </span>
+              </div>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10"
+                >
+                  <NavIcon label="Sign out" />
+                  <span
+                    className={tabletExpanded ? "inline" : "hidden lg:inline"}
+                  >
+                    Sign out
+                  </span>
+                </button>
+              </form>
+            </>
+          ) : (
+            <form action={signInAction}>
+              <button
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                <NavIcon label="Sign in" />
+                <span className={tabletExpanded ? "inline" : "hidden lg:inline"}>
+                  Sign in
+                </span>
+              </button>
+            </form>
+          )}
         </div>
       </aside>
 
@@ -158,15 +178,15 @@ export function AppShell({
             </Link>
           ))}
           <form
-            action={signOutAction}
+            action={user ? signOutAction : signInAction}
             className="contents"
           >
             <button
               type="submit"
               className="flex flex-col items-center gap-1 rounded-md py-3 text-xs hover:bg-black/5 dark:hover:bg-white/10"
             >
-              <NavIcon label="Sign out" />
-              Sign out
+              <NavIcon label={user ? "Sign out" : "Sign in"} />
+              {user ? "Sign out" : "Sign in"}
             </button>
           </form>
         </div>

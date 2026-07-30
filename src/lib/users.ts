@@ -1,5 +1,5 @@
 import { firestore } from "@/lib/firestore";
-import { SCOPES, type Scope } from "@/lib/scopes";
+import { SCOPES, isPostTypeScope, type Scope } from "@/lib/scopes";
 
 export interface AppUser {
   id: string;
@@ -17,8 +17,10 @@ interface UserRecord {
 
 function sanitizeScopes(scopes: unknown): Scope[] {
   if (!Array.isArray(scopes)) return [];
-  return scopes.filter((scope): scope is Scope =>
-    (SCOPES as readonly string[]).includes(scope),
+  return scopes.filter(
+    (scope): scope is Scope =>
+      typeof scope === "string" &&
+      ((SCOPES as readonly string[]).includes(scope) || isPostTypeScope(scope)),
   );
 }
 
@@ -42,6 +44,18 @@ export async function getOrCreateUserScopes(params: {
   });
 
   return [];
+}
+
+export async function getUser(id: string): Promise<AppUser | null> {
+  const snapshot = await firestore.collection("users").doc(id).get();
+  if (!snapshot.exists) return null;
+  const data = snapshot.data() as UserRecord;
+  return {
+    id: snapshot.id,
+    email: data.email,
+    name: data.name,
+    scopes: sanitizeScopes(data.scopes),
+  };
 }
 
 export async function getUserScopes(id: string): Promise<Scope[]> {

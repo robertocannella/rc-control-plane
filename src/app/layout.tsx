@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
 import { AppShell, type NavItem } from "@/components/app-shell";
-import { auth, signOut } from "@/auth";
+import { auth, signIn, signOut } from "@/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,6 +25,9 @@ function buildNavItems(scopes: string[]): NavItem[] {
   if (scopes.includes("admin")) {
     items.push({ href: "/admin", label: "Admin" });
   }
+  // Every signed-in user can view public (and any private) post types, not
+  // just users with edit access, so the Content hub is open to everyone.
+  items.push({ href: "/content", label: "Content" });
   return items;
 }
 
@@ -42,20 +45,32 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ToastProvider>
-          {session?.user ? (
-            <AppShell
-              navItems={buildNavItems(session.user.scopes)}
-              user={session.user}
-              signOutAction={async () => {
-                "use server";
-                await signOut();
-              }}
-            >
-              {children}
-            </AppShell>
-          ) : (
-            children
-          )}
+          <AppShell
+            navItems={
+              session?.user
+                ? buildNavItems(session.user.scopes)
+                : [{ href: "/", label: "Home" }]
+            }
+            user={session?.user}
+            signOutAction={
+              session?.user
+                ? async () => {
+                    "use server";
+                    await signOut();
+                  }
+                : undefined
+            }
+            signInAction={
+              !session?.user
+                ? async () => {
+                    "use server";
+                    await signIn("google");
+                  }
+                : undefined
+            }
+          >
+            {children}
+          </AppShell>
         </ToastProvider>
       </body>
     </html>
