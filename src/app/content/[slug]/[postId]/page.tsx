@@ -1,11 +1,55 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { getPostType } from "@/lib/post-types";
+import type { Session } from "next-auth";
+import { getPostType, type FieldDef } from "@/lib/post-types";
 import { getPost } from "@/lib/posts";
 import { canViewPostType, canEditPostType } from "@/lib/content-access";
-import { PostFieldDisplay } from "../PostFieldDisplay";
+import {
+  PostFieldDisplay,
+  getPostTitle,
+  type ResolvedRelationDisplay,
+} from "../PostFieldDisplay";
 import { PostDeleteButton } from "../PostDeleteButton";
+
+async function resolveRelations(
+  fields: FieldDef[],
+  values: Record<string, unknown>,
+  session: Session | null,
+): Promise<Record<string, ResolvedRelationDisplay>> {
+  const resolved: Record<string, ResolvedRelationDisplay> = {};
+
+  for (const field of fields) {
+    if (field.type !== "relation" || !field.relatedPostType) continue;
+    const relatedId = values[field.key];
+    if (typeof relatedId !== "string" || !relatedId) continue;
+
+    const relatedPostType = await getPostType(field.relatedPostType);
+    if (!relatedPostType) {
+      resolved[field.key] = { kind: "missing" };
+      continue;
+    }
+
+    // Never reveal a related post's title/link to a viewer who couldn't
+    // view that post type themselves — this is what the site owner's own
+    // per-post-type visibility setting is supposed to guarantee.
+    if (!canViewPostType(relatedPostType, session)) {
+      resolved[field.key] = { kind: "hidden" };
+      continue;
+    }
+
+    const relatedPost = await getPost(field.relatedPostType, relatedId);
+    resolved[field.key] = relatedPost
+      ? {
+          kind: "visible",
+          label: getPostTitle(relatedPostType, relatedPost),
+          href: `/content/${field.relatedPostType}/${relatedId}`,
+        }
+      : { kind: "missing" };
+  }
+
+  return resolved;
+}
 
 export default async function PostDetailPage({
   params,
@@ -25,6 +69,11 @@ export default async function PostDetailPage({
   if (!post) notFound();
 
   const editable = canEditPostType(postType, session);
+  const resolvedRelations = await resolveRelations(
+    postType.fields,
+    post.values,
+    session,
+  );
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
@@ -48,7 +97,11 @@ export default async function PostDetailPage({
             <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
               {field.label}
             </span>
-            <PostFieldDisplay field={field} value={post.values[field.key]} />
+            <PostFieldDisplay
+              field={field}
+              value={post.values[field.key]}
+              resolved={resolvedRelations[field.key]}
+            />
           </div>
         ))}
       </div>

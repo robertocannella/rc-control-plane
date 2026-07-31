@@ -4,10 +4,12 @@ export type FieldType =
   | "richtext"
   | "number"
   | "date"
+  | "time"
   | "boolean"
   | "select"
   | "image"
-  | "link";
+  | "link"
+  | "relation";
 
 export interface FieldTypeMeta {
   value: FieldType;
@@ -21,10 +23,12 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
   { value: "richtext", label: "Rich text", hasOptions: false },
   { value: "number", label: "Number", hasOptions: false },
   { value: "date", label: "Date", hasOptions: false },
+  { value: "time", label: "Time of day", hasOptions: false },
   { value: "boolean", label: "Yes / No", hasOptions: false },
   { value: "select", label: "Select (choose one)", hasOptions: true },
   { value: "image", label: "Image (URL)", hasOptions: false },
   { value: "link", label: "Link (URL)", hasOptions: false },
+  { value: "relation", label: "Related item", hasOptions: false },
 ];
 
 export function isFieldType(value: unknown): value is FieldType {
@@ -52,9 +56,11 @@ export function coerceFieldValue(
     case "longtext":
     case "richtext":
     case "date":
+    case "time":
     case "image":
     case "link":
     case "select":
+    case "relation":
       return typeof raw === "string" ? raw.trim() : "";
   }
 }

@@ -4,6 +4,7 @@ import { getPostType } from "@/lib/post-types";
 import { getPost } from "@/lib/posts";
 import { canEditPostType } from "@/lib/content-access";
 import { PostForm } from "../../PostForm";
+import { buildRelationOptions } from "../../relation-options";
 
 export default async function EditPostPage({
   params,
@@ -34,10 +35,17 @@ export default async function EditPostPage({
   const post = await getPost(slug, postId);
   if (!post) notFound();
 
+  const relationOptions = await buildRelationOptions(postType.fields);
+
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <h1 className="text-2xl font-semibold">Edit {postType.label}</h1>
-      <PostForm slug={slug} fields={postType.fields} post={post} />
+      <PostForm
+        slug={slug}
+        fields={postType.fields}
+        post={post}
+        relationOptions={relationOptions}
+      />
     </main>
   );
 }

@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Validated categorical palette (dataviz skill), capped at 3 slots since a
+     donut chart is an all-pairs form — see time-chart-data.ts. */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+  --chart-series-other: #898781;
 }
 
 @theme inline {
@@ -28,6 +34,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --chart-series-1: #3987e5;
+    --chart-series-2: #d95926;
+    --chart-series-3: #199e70;
   }
 }
 
