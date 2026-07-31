@@ -29,6 +29,7 @@ interface FieldRow {
   type: FieldType;
   required: boolean;
   optionsText: string; // comma-separated, only meaningful when type === "select"
+  relatedPostType: string; // slug, only meaningful when type === "relation"
 }
 
 function slugify(label: string): string {
@@ -48,9 +49,12 @@ function keyify(label: string, fallback: string): string {
   return key && /^[a-z]/.test(key) ? key : fallback;
 }
 
-type PostTypeFormProps =
+type PostTypeFormProps = (
   | { mode: "create" }
-  | { mode: "edit"; postType: PostType };
+  | { mode: "edit"; postType: PostType }
+) & {
+  postTypes: { slug: string; label: string }[];
+};
 
 export function PostTypeForm(props: PostTypeFormProps) {
   const postType = props.mode === "edit" ? props.postType : undefined;
@@ -77,6 +81,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
       rowId: nextFieldRowId++,
       isNew: false,
       optionsText: (field.options ?? []).join(", "),
+      relatedPostType: field.relatedPostType ?? "",
     })),
   );
 
@@ -101,6 +106,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
         type: "text",
         required: false,
         optionsText: "",
+        relatedPostType: props.postTypes[0]?.slug ?? "",
       },
     ]);
   }
@@ -142,6 +148,9 @@ export function PostTypeForm(props: PostTypeFormProps) {
             .map((option) => option.trim())
             .filter(Boolean),
         }
+      : {}),
+    ...(field.type === "relation"
+      ? { relatedPostType: field.relatedPostType }
       : {}),
   }));
 
@@ -259,6 +268,11 @@ export function PostTypeForm(props: PostTypeFormProps) {
 
       <div className="flex flex-col gap-3">
         <span className="text-sm font-medium">Fields</span>
+        <p className="text-xs text-gray-500">
+          Tip: the first two &ldquo;Time of day&rdquo; fields (in the order
+          below) get a built-in start/stop timer on the entry form — label
+          them whatever you like.
+        </p>
         {fields.length === 0 && (
           <p className="text-sm text-gray-500">
             No fields yet — add at least one.
@@ -331,6 +345,37 @@ export function PostTypeForm(props: PostTypeFormProps) {
                 className="min-w-48 flex-1 rounded-md border px-3 py-1.5 text-sm"
               />
             )}
+
+            {field.type === "relation" &&
+              (props.postTypes.length > 0 ? (
+                <div className="flex min-w-48 flex-1 flex-col gap-1">
+                  <select
+                    value={field.relatedPostType}
+                    onChange={(e) =>
+                      updateField(field.rowId, {
+                        relatedPostType: e.target.value,
+                      })
+                    }
+                    className="rounded-md border px-2 py-1.5 text-sm"
+                  >
+                    {props.postTypes.map((pt) => (
+                      <option key={pt.slug} value={pt.slug}>
+                        {pt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {!field.isNew && (
+                    <span className="text-xs text-gray-500">
+                      Changing this may make existing entries show as
+                      missing.
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-gray-500">
+                  Create another post type first.
+                </span>
+              ))}
 
             <div className="flex items-center gap-1">
               <button

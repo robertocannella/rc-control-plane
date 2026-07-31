@@ -4,7 +4,9 @@ import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
 import { listPosts } from "@/lib/posts";
 import { canViewPostType, canEditPostType } from "@/lib/content-access";
-import { formatFieldValue } from "./PostFieldDisplay";
+import { getPostTitle } from "./PostFieldDisplay";
+import { buildTimeChartData } from "./time-chart-data";
+import { TimeChart } from "./TimeChart";
 
 export default async function PostTypeContentListPage({
   params,
@@ -23,11 +25,14 @@ export default async function PostTypeContentListPage({
 
   const posts = await listPosts(slug);
   const editable = canEditPostType(postType, session);
-  const titleField = postType.fields[0];
+  const chartResult = await buildTimeChartData(postType, posts, session);
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <h1 className="text-2xl font-semibold">{postType.label}</h1>
+      {chartResult.kind !== "not-applicable" && (
+        <TimeChart result={chartResult} />
+      )}
       {editable && (
         <Link
           href={`/content/${slug}/new`}
@@ -49,9 +54,7 @@ export default async function PostTypeContentListPage({
               href={`/content/${slug}/${post.id}`}
               className="min-w-48 flex-1 font-medium hover:underline"
             >
-              {titleField
-                ? formatFieldValue(titleField.type, post.values[titleField.key])
-                : post.id}
+              {getPostTitle(postType, post)}
             </Link>
             {editable && (
               <Link

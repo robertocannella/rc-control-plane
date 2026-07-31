@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
 import { canEditPostType } from "@/lib/content-access";
 import { PostForm } from "../PostForm";
+import { buildRelationOptions } from "../relation-options";
 
 export default async function NewPostPage({
   params,
@@ -30,10 +31,16 @@ export default async function NewPostPage({
     );
   }
 
+  const relationOptions = await buildRelationOptions(postType.fields);
+
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <h1 className="text-2xl font-semibold">New {postType.label}</h1>
-      <PostForm slug={slug} fields={postType.fields} />
+      <PostForm
+        slug={slug}
+        fields={postType.fields}
+        relationOptions={relationOptions}
+      />
     </main>
   );
 }

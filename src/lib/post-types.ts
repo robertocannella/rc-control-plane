@@ -12,6 +12,7 @@ export interface FieldDef {
   type: FieldType;
   required: boolean;
   options?: string[];
+  relatedPostType?: string; // slug of the post type this "relation" field points to
 }
 
 /**
@@ -72,6 +73,15 @@ function sanitizeFieldDef(raw: unknown): FieldDef | null {
           (o): o is string => typeof o === "string" && o.trim().length > 0,
         )
       : [];
+  }
+
+  if (r.type === "relation") {
+    // A relation with no valid target is meaningless, unlike a select with
+    // zero options — reject the field entirely rather than saving it broken.
+    if (typeof r.relatedPostType !== "string" || !isValidSlug(r.relatedPostType)) {
+      return null;
+    }
+    field.relatedPostType = r.relatedPostType;
   }
 
   return field;

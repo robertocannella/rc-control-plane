@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Calendar,
+  Clock,
   FileText,
   Folder,
   Image,
@@ -18,6 +19,7 @@ export const POST_TYPE_ICONS = {
   "file-text": { label: "Document", Icon: FileText },
   "utensils-crossed": { label: "Recipe", Icon: UtensilsCrossed },
   calendar: { label: "Event", Icon: Calendar },
+  clock: { label: "Time tracker", Icon: Clock },
   "book-open": { label: "Article", Icon: BookOpen },
   image: { label: "Photo", Icon: Image },
   "map-pin": { label: "Place", Icon: MapPin },
