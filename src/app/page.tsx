@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth, signIn } from "@/auth";
+import { Shield } from "lucide-react";
 import { listPostTypes } from "@/lib/post-types";
 import { canViewPostType } from "@/lib/content-access";
+import { getPostTypeIcon } from "@/lib/post-type-icons";
 
 export default async function Home() {
   const session = await auth();
@@ -34,15 +36,19 @@ export default async function Home() {
 
         {postTypes.length > 0 && (
           <div className="flex w-full max-w-2xl flex-col gap-3">
-            {postTypes.map((postType) => (
-              <Link
-                key={postType.slug}
-                href={`/content/${postType.slug}`}
-                className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
-              >
-                <div className="font-medium">{postType.label}</div>
-              </Link>
-            ))}
+            {postTypes.map((postType) => {
+              const Icon = getPostTypeIcon(postType.icon);
+              return (
+                <Link
+                  key={postType.slug}
+                  href={`/content/${postType.slug}`}
+                  className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-gray-500" />
+                  <div className="font-medium">{postType.label}</div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </main>
@@ -65,20 +71,25 @@ export default async function Home() {
       </div>
 
       <div className="flex w-full max-w-2xl flex-col gap-3">
-        {postTypes.map((postType) => (
-          <Link
-            key={postType.slug}
-            href={`/content/${postType.slug}`}
-            className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
-          >
-            <div className="font-medium">{postType.label}</div>
-          </Link>
-        ))}
+        {postTypes.map((postType) => {
+          const Icon = getPostTypeIcon(postType.icon);
+          return (
+            <Link
+              key={postType.slug}
+              href={`/content/${postType.slug}`}
+              className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <Icon className="h-5 w-5 shrink-0 text-gray-500" />
+              <div className="font-medium">{postType.label}</div>
+            </Link>
+          );
+        })}
         {session.user.scopes.includes("admin") && (
           <Link
             href="/admin"
             className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
           >
+            <Shield className="h-5 w-5 shrink-0 text-gray-500" />
             <div className="font-medium">Admin</div>
           </Link>
         )}

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listPostTypes } from "@/lib/post-types";
 import { canViewPostType, canEditPostType } from "@/lib/content-access";
+import { getPostTypeIcon } from "@/lib/post-type-icons";
 
 export default async function ContentHubPage() {
   const session = await auth();
@@ -22,21 +23,25 @@ export default async function ContentHubPage() {
         <p className="text-sm text-gray-500">No post types yet.</p>
       ) : (
         <div className="flex w-full max-w-2xl flex-col gap-3">
-          {postTypes.map((postType) => (
-            <Link
-              key={postType.slug}
-              href={`/content/${postType.slug}`}
-              className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              <div className="flex-1">
-                <div className="font-medium">{postType.label}</div>
-                <div className="text-sm text-gray-500">
-                  {postType.visibility}
-                  {canEditPostType(postType, session) ? " · editor" : ""}
+          {postTypes.map((postType) => {
+            const Icon = getPostTypeIcon(postType.icon);
+            return (
+              <Link
+                key={postType.slug}
+                href={`/content/${postType.slug}`}
+                className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                <Icon className="h-5 w-5 shrink-0 text-gray-500" />
+                <div className="flex-1">
+                  <div className="font-medium">{postType.label}</div>
+                  <div className="text-sm text-gray-500">
+                    {postType.visibility}
+                    {canEditPostType(postType, session) ? " · editor" : ""}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </main>

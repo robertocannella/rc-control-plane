@@ -10,6 +10,11 @@ import {
   isValidSlug,
   type PostTypeVisibility,
 } from "@/lib/post-types";
+import {
+  isPostTypeIconName,
+  DEFAULT_POST_TYPE_ICON,
+  type PostTypeIconName,
+} from "@/lib/post-type-icons";
 
 export interface PostTypeFormState {
   status: "idle" | "success" | "error";
@@ -31,6 +36,10 @@ function parseVisibility(raw: FormDataEntryValue | null): PostTypeVisibility {
     : "editor";
 }
 
+function parseIcon(raw: FormDataEntryValue | null): PostTypeIconName {
+  return isPostTypeIconName(raw) ? raw : DEFAULT_POST_TYPE_ICON;
+}
+
 export async function createPostTypeAction(
   _prevState: PostTypeFormState,
   formData: FormData,
@@ -45,6 +54,7 @@ export async function createPostTypeAction(
     .toLowerCase();
   const label = String(formData.get("label") ?? "").trim();
   const visibility = parseVisibility(formData.get("visibility"));
+  const icon = parseIcon(formData.get("icon"));
   const fields = parseFields(formData.get("fields"));
 
   if (!slug || !isValidSlug(slug)) {
@@ -60,7 +70,13 @@ export async function createPostTypeAction(
     return { status: "error", message: "Add at least one field." };
   }
 
-  const result = await createPostType({ slug, label, visibility, fields });
+  const result = await createPostType({
+    slug,
+    label,
+    visibility,
+    icon,
+    fields,
+  });
   if (!result.ok) {
     return { status: "error", message: result.reason };
   }
@@ -82,6 +98,7 @@ export async function updatePostTypeAction(
 
   const label = String(formData.get("label") ?? "").trim();
   const visibility = parseVisibility(formData.get("visibility"));
+  const icon = parseIcon(formData.get("icon"));
   const fields = parseFields(formData.get("fields"));
 
   if (!label) {
@@ -91,7 +108,7 @@ export async function updatePostTypeAction(
     return { status: "error", message: "Add at least one field." };
   }
 
-  await updatePostType(slug, { label, visibility, fields });
+  await updatePostType(slug, { label, visibility, icon, fields });
 
   revalidatePath("/admin/post-types");
   revalidatePath(`/admin/post-types/${slug}/edit`);

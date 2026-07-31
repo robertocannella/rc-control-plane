@@ -1,5 +1,10 @@
 import { firestore } from "@/lib/firestore";
 import { isFieldType, type FieldType } from "@/lib/field-types";
+import {
+  isPostTypeIconName,
+  DEFAULT_POST_TYPE_ICON,
+  type PostTypeIconName,
+} from "@/lib/post-type-icons";
 
 export interface FieldDef {
   key: string;
@@ -21,6 +26,7 @@ export interface PostType {
   slug: string;
   label: string;
   visibility: PostTypeVisibility;
+  icon: PostTypeIconName;
   fields: FieldDef[];
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +35,7 @@ export interface PostType {
 interface PostTypeRecord {
   label: string;
   visibility?: unknown;
+  icon?: unknown;
   fields?: unknown;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
@@ -91,11 +98,16 @@ function sanitizeVisibility(v: unknown): PostTypeVisibility {
   return "editor"; // fail closed for anything unrecognized
 }
 
+function sanitizeIcon(icon: unknown): PostTypeIconName {
+  return isPostTypeIconName(icon) ? icon : DEFAULT_POST_TYPE_ICON;
+}
+
 function toPostType(slug: string, data: PostTypeRecord): PostType {
   return {
     slug,
     label: data.label,
     visibility: sanitizeVisibility(data.visibility),
+    icon: sanitizeIcon(data.icon),
     fields: sanitizeFields(data.fields),
     createdAt: data.createdAt.toDate(),
     updatedAt: data.updatedAt.toDate(),
@@ -122,6 +134,7 @@ export async function createPostType(params: {
   slug: string;
   label: string;
   visibility: PostTypeVisibility;
+  icon: PostTypeIconName;
   fields: FieldDef[];
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!isValidSlug(params.slug)) {
@@ -139,6 +152,7 @@ export async function createPostType(params: {
       .create({
         label: params.label,
         visibility: params.visibility,
+        icon: params.icon,
         fields: params.fields,
         createdAt: now,
         updatedAt: now,
@@ -154,12 +168,14 @@ export async function updatePostType(
   params: {
     label: string;
     visibility: PostTypeVisibility;
+    icon: PostTypeIconName;
     fields: FieldDef[];
   },
 ): Promise<void> {
   await firestore.collection("postTypes").doc(slug).update({
     label: params.label,
     visibility: params.visibility,
+    icon: params.icon,
     fields: params.fields,
     updatedAt: new Date(),
   });

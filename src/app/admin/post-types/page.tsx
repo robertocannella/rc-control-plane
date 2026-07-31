@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listPostTypes } from "@/lib/post-types";
+import { getPostTypeIcon } from "@/lib/post-type-icons";
 
 export default async function PostTypesPage() {
   const session = await auth();
@@ -36,33 +37,37 @@ export default async function PostTypesPage() {
         {postTypes.length === 0 && (
           <p className="text-sm text-gray-500">No post types yet.</p>
         )}
-        {postTypes.map((postType) => (
-          <div
-            key={postType.slug}
-            className="flex flex-wrap items-center gap-4 rounded-md border px-4 py-3"
-          >
-            <div className="min-w-48 flex-1">
-              <div className="font-medium">{postType.label}</div>
-              <div className="text-sm text-gray-500">
-                <span className="font-mono">{postType.slug}</span> ·{" "}
-                {postType.visibility} · {postType.fields.length} field
-                {postType.fields.length === 1 ? "" : "s"}
+        {postTypes.map((postType) => {
+          const Icon = getPostTypeIcon(postType.icon);
+          return (
+            <div
+              key={postType.slug}
+              className="flex flex-wrap items-center gap-4 rounded-md border px-4 py-3"
+            >
+              <Icon className="h-5 w-5 shrink-0 text-gray-500" />
+              <div className="min-w-48 flex-1">
+                <div className="font-medium">{postType.label}</div>
+                <div className="text-sm text-gray-500">
+                  <span className="font-mono">{postType.slug}</span> ·{" "}
+                  {postType.visibility} · {postType.fields.length} field
+                  {postType.fields.length === 1 ? "" : "s"}
+                </div>
               </div>
+              <Link
+                href={`/admin/post-types/${postType.slug}/edit`}
+                className="text-sm underline"
+              >
+                Edit
+              </Link>
+              <Link
+                href={`/content/${postType.slug}`}
+                className="text-sm underline"
+              >
+                View content
+              </Link>
             </div>
-            <Link
-              href={`/admin/post-types/${postType.slug}/edit`}
-              className="text-sm underline"
-            >
-              Edit
-            </Link>
-            <Link
-              href={`/content/${postType.slug}`}
-              className="text-sm underline"
-            >
-              View content
-            </Link>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
