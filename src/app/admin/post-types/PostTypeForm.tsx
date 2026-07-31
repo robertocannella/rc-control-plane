@@ -4,6 +4,12 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FIELD_TYPES, type FieldType } from "@/lib/field-types";
 import type { PostType, PostTypeVisibility } from "@/lib/post-types";
+import {
+  POST_TYPE_ICONS,
+  POST_TYPE_ICON_NAMES,
+  DEFAULT_POST_TYPE_ICON,
+  type PostTypeIconName,
+} from "@/lib/post-type-icons";
 import { useToast } from "@/components/toast-provider";
 import {
   createPostTypeAction,
@@ -61,6 +67,9 @@ export function PostTypeForm(props: PostTypeFormProps) {
   const [slugTouched, setSlugTouched] = useState(props.mode === "edit");
   const [visibility, setVisibility] = useState<PostTypeVisibility>(
     postType?.visibility ?? "account",
+  );
+  const [icon, setIcon] = useState<PostTypeIconName>(
+    postType?.icon ?? DEFAULT_POST_TYPE_ICON,
   );
   const [fields, setFields] = useState<FieldRow[]>(() =>
     (postType?.fields ?? []).map((field) => ({
@@ -184,6 +193,33 @@ export function PostTypeForm(props: PostTypeFormProps) {
           Slug: <span className="font-mono">{postType!.slug}</span>
         </p>
       )}
+
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium">Icon</span>
+        <div className="flex flex-wrap gap-2">
+          {POST_TYPE_ICON_NAMES.map((name) => {
+            const { label: iconLabel, Icon } = POST_TYPE_ICONS[name];
+            const selected = icon === name;
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setIcon(name)}
+                aria-pressed={selected}
+                title={iconLabel}
+                className={`flex h-10 w-10 items-center justify-center rounded-md border hover:bg-black/5 dark:hover:bg-white/10 ${
+                  selected
+                    ? "border-black dark:border-white"
+                    : "border-black/10 dark:border-white/10"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </button>
+            );
+          })}
+        </div>
+        <input type="hidden" name="icon" value={icon} />
+      </div>
 
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium">Visibility</span>

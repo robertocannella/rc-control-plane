@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
+import type { Session } from "next-auth";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { auth, signIn, signOut } from "@/auth";
+import { listPostTypes } from "@/lib/post-types";
+import { canViewPostType } from "@/lib/content-access";
+import { getPostTypeIcon } from "@/lib/post-type-icons";
+import { Home, Layers, Shield } from "lucide-react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,14 +25,44 @@ export const metadata: Metadata = {
   description: "Sign in with Google",
 };
 
-function buildNavItems(scopes: string[]): NavItem[] {
-  const items: NavItem[] = [{ href: "/", label: "Home" }];
-  if (scopes.includes("admin")) {
-    items.push({ href: "/admin", label: "Admin" });
+const NAV_ICON_CLASS = "h-5 w-5 shrink-0";
+
+async function buildNavItems(session: Session | null): Promise<NavItem[]> {
+  const items: NavItem[] = [
+    { href: "/", label: "Home", icon: <Home className={NAV_ICON_CLASS} /> },
+  ];
+
+  if (session?.user?.scopes.includes("admin")) {
+    items.push({
+      href: "/admin",
+      label: "Admin",
+      icon: <Shield className={NAV_ICON_CLASS} />,
+    });
   }
-  // Every signed-in user can view public (and any private) post types, not
-  // just users with edit access, so the Content hub is open to everyone.
-  items.push({ href: "/content", label: "Content" });
+
+  if (session?.user) {
+    // The hub only lists post types you can edit; still worth a top-level
+    // link for admins/editors even though direct post-type links (below)
+    // cover plain viewing for everyone.
+    items.push({
+      href: "/content",
+      label: "Content",
+      icon: <Layers className={NAV_ICON_CLASS} />,
+    });
+  }
+
+  const postTypes = (await listPostTypes()).filter((postType) =>
+    canViewPostType(postType, session),
+  );
+  for (const postType of postTypes) {
+    const Icon = getPostTypeIcon(postType.icon);
+    items.push({
+      href: `/content/${postType.slug}`,
+      label: postType.label,
+      icon: <Icon className={NAV_ICON_CLASS} />,
+    });
+  }
+
   return items;
 }
 
@@ -37,6 +72,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+  const navItems = await buildNavItems(session);
 
   return (
     <html
@@ -46,11 +82,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <ToastProvider>
           <AppShell
-            navItems={
-              session?.user
-                ? buildNavItems(session.user.scopes)
-                : [{ href: "/", label: "Home" }]
-            }
+            navItems={navItems}
             user={session?.user}
             signOutAction={
               session?.user
