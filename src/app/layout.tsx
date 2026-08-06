@@ -7,7 +7,7 @@ import { auth, signIn, signOut } from "@/auth";
 import { listPostTypes } from "@/lib/post-types";
 import { canViewPostType } from "@/lib/content-access";
 import { getPostTypeIcon } from "@/lib/post-type-icons";
-import { Home, Layers, Shield } from "lucide-react";
+import { Home, Layers, Scale, Shield } from "lucide-react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +37,11 @@ async function buildNavItems(session: Session | null): Promise<NavItem[]> {
       href: "/admin",
       label: "Admin",
       icon: <Shield className={NAV_ICON_CLASS} />,
+    });
+    items.push({
+      href: "/weight-history",
+      label: "Weight History",
+      icon: <Scale className={NAV_ICON_CLASS} />,
     });
   }
 

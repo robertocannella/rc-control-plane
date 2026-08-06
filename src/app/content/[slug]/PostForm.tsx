@@ -9,6 +9,7 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   createPostAction,
   updatePostAction,
+  startPostAction,
   type PostFormState,
 } from "./actions";
 
@@ -48,31 +49,61 @@ export function PostForm({
   const endField = timeFields[1];
   const dateField = fields.find((field) => field.type === "date");
 
+  const startValue = startField ? post?.values[startField.key] : undefined;
+  const endValue = endField ? post?.values[endField.key] : undefined;
+  const isInProgress =
+    !!post && typeof startValue === "string" && !!startValue && !endValue;
+
+  // Only show the timer when creating a fresh entry, or when resuming one
+  // that was started but never stopped — not on an already-completed entry,
+  // which has no reason to be re-timed.
+  const showTimer = startField && endField && (!post || isInProgress);
+
+  const alreadyStartedAt =
+    isInProgress && typeof startValue === "string"
+      ? combineDateAndTime(
+          dateField ? post?.values[dateField.key] : undefined,
+          startValue,
+        )
+      : undefined;
+
   return (
     <form
       action={formAction}
       className="flex w-full max-w-2xl flex-col gap-6 rounded-md border p-6"
     >
-      {startField && endField && (
+      {showTimer && (
         <EntryTimer
+          slug={slug}
           startFieldKey={startField.key}
           endFieldKey={endField.key}
           dateFieldKey={dateField?.key}
+          alreadyStartedAt={alreadyStartedAt}
         />
       )}
-      {fields.map((field) => (
-        <div key={field.key} className="flex flex-col gap-1">
-          <label className="text-sm font-medium" htmlFor={field.key}>
-            {field.label}
-            {field.required && " *"}
-          </label>
-          {renderInput(
-            field,
-            post?.values[field.key],
-            relationOptions?.[field.key],
-          )}
-        </div>
-      ))}
+      {fields.map((field) => {
+        // Match the server-side exemption in posts.ts: while an entry is
+        // still in progress, the end-time field isn't required, so the
+        // browser's native validation doesn't block saving other changes
+        // before you've stopped the timer.
+        const isExemptEndField = isInProgress && field.key === endField?.key;
+        const effectiveField = isExemptEndField
+          ? { ...field, required: false }
+          : field;
+        return (
+          <div key={field.key} className="flex flex-col gap-1">
+            <label className="text-sm font-medium" htmlFor={field.key}>
+              {field.label}
+              {effectiveField.required && " *"}
+            </label>
+            {renderInput(
+              effectiveField,
+              post?.values[field.key],
+              relationOptions?.[field.key],
+            )}
+          </div>
+        );
+      })}
       {state.status === "error" && (
         <p className="text-sm text-red-600">{state.message}</p>
       )}
@@ -225,13 +256,6 @@ function formatClockValue(date: Date): string {
   return date.toTimeString().slice(0, 5); // "HH:MM", matches <input type="time">
 }
 
-function formatLocalDateValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function formatElapsed(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -241,54 +265,88 @@ function formatElapsed(totalSeconds: number): string {
     .join(":");
 }
 
-// Fills in the start/end time (and date) inputs with the actual clock times
-// observed, so you don't have to type them by hand. Those inputs are
-// uncontrolled (defaultValue only), so writing .value directly here doesn't
-// fight React — the values still submit normally with the rest of the form.
+// Combines a "YYYY-MM-DD" + "HH:MM" pair into a real local Date, so a
+// resumed timer's elapsed time is computed from the actual recorded start
+// instant rather than from in-memory state (which doesn't survive reload).
+// Falls back to today if there's no date field on the schema.
+function combineDateAndTime(
+  dateValue: unknown,
+  timeValue: string,
+): string | undefined {
+  const [hours, minutes] = timeValue.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return undefined;
+
+  // Built from separate y/m/d/h/min parts (all local time) rather than via
+  // `new Date("YYYY-MM-DD")` + setHours — the former parses a bare date
+  // string as UTC midnight, which then disagrees with setHours' local-time
+  // interpretation and silently drifts the result by the timezone offset.
+  let year: number;
+  let month: number; // 1-indexed
+  let day: number;
+  if (typeof dateValue === "string" && dateValue) {
+    const parts = dateValue.split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+      return undefined;
+    }
+    [year, month, day] = parts;
+  } else {
+    const today = new Date();
+    year = today.getFullYear();
+    month = today.getMonth() + 1;
+    day = today.getDate();
+  }
+
+  const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+}
+
+// The entry form's start/end time inputs are uncontrolled (defaultValue
+// only), so writing .value directly on Stop doesn't fight React — the value
+// still submits normally with the rest of the form. Start instead submits
+// the whole form through a dedicated server action that creates a real
+// (intentionally incomplete) entry and navigates to its edit page, so the
+// timer survives closing the browser — see startPostAction.
 function EntryTimer({
+  slug,
   startFieldKey,
   endFieldKey,
   dateFieldKey,
+  alreadyStartedAt,
 }: {
+  slug: string;
   startFieldKey: string;
   endFieldKey: string;
   dateFieldKey?: string;
+  alreadyStartedAt?: string;
 }) {
-  const [running, setRunning] = useState(false);
+  const initialStartedAtMs = alreadyStartedAt
+    ? new Date(alreadyStartedAt).getTime()
+    : null;
+  const [running, setRunning] = useState(initialStartedAtMs !== null);
+  // Always starts at 0 — computing the real elapsed time here would run
+  // during SSR too, and Date.now() at server-render time vs. client-hydrate
+  // time differ, causing a hydration mismatch. The effect below (client-only)
+  // corrects it immediately on mount instead.
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef<number | null>(null);
+  const startedAtRef = useRef<number | null>(initialStartedAtMs);
 
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+    if (!running) return;
 
-  function handleStart() {
-    const now = new Date();
-    startedAtRef.current = Date.now();
-    setElapsedSeconds(0);
-    setRunning(true);
-
-    intervalRef.current = setInterval(() => {
+    const tick = () => {
       setElapsedSeconds(
         Math.floor((Date.now() - (startedAtRef.current ?? Date.now())) / 1000),
       );
-    }, 1000);
+    };
+    tick();
+    intervalRef.current = setInterval(tick, 1000);
 
-    const startInput = document.getElementById(
-      startFieldKey,
-    ) as HTMLInputElement | null;
-    if (startInput) startInput.value = formatClockValue(now);
-
-    if (dateFieldKey) {
-      const dateInput = document.getElementById(
-        dateFieldKey,
-      ) as HTMLInputElement | null;
-      if (dateInput) dateInput.value = formatLocalDateValue(now);
-    }
-  }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [running]);
 
   function handleStop() {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -300,22 +358,39 @@ function EntryTimer({
     if (endInput) endInput.value = formatClockValue(new Date());
   }
 
-  return (
-    <div className="flex items-center gap-3 rounded-md border px-4 py-3">
-      <button
-        type="button"
-        onClick={running ? handleStop : handleStart}
-        className={`rounded-md px-4 py-2 text-sm text-white ${
-          running ? "bg-red-600 hover:bg-red-700" : "bg-black hover:bg-gray-800"
-        }`}
+  if (running) {
+    return (
+      <div
+        key="running"
+        className="flex items-center gap-3 rounded-md border px-4 py-3"
       >
-        {running ? "Stop" : "Start"}
-      </button>
-      {running && (
+        <button
+          type="button"
+          onClick={handleStop}
+          className="rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+        >
+          Stop
+        </button>
         <span className="font-mono text-sm text-gray-600">
           {formatElapsed(elapsedSeconds)}
         </span>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      key="stopped"
+      className="flex items-center gap-3 rounded-md border px-4 py-3"
+    >
+      <button
+        type="submit"
+        formAction={startPostAction.bind(null, slug, startFieldKey, dateFieldKey)}
+        formNoValidate
+        className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+      >
+        Start
+      </button>
     </div>
   );
 }
