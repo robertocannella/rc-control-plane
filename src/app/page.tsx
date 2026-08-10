@@ -18,7 +18,7 @@ export default async function Home() {
       <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
         <div className="flex flex-col items-center gap-6">
           <h1 className="text-2xl font-semibold">Roberto Cannella</h1>
-          <h2 className="text-lg text-gray-600">Docs, Ideas, and Tools.</h2>
+          <h2 className="text-lg text-muted-foreground">Docs, Ideas, and Tools.</h2>
           <form
             action={async () => {
               "use server";
@@ -27,7 +27,7 @@ export default async function Home() {
           >
             <button
               type="submit"
-              className="rounded-md bg-black px-4 py-2 text-white hover:bg-gray-800"
+              className="rounded-md bg-accent px-4 py-2 text-accent-foreground hover:opacity-90"
             >
               Sign in with Google
             </button>
@@ -42,7 +42,7 @@ export default async function Home() {
                 <Link
                   key={postType.slug}
                   href={`/content/${postType.slug}`}
-                  className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+                  className="flex items-center gap-4 rounded-md border border-border px-4 py-3 hover:bg-foreground/5"
                 >
                   <Icon className="h-5 w-5 shrink-0 text-gray-500" />
                   <div className="font-medium">{postType.label}</div>
@@ -77,7 +77,7 @@ export default async function Home() {
             <Link
               key={postType.slug}
               href={`/content/${postType.slug}`}
-              className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+              className="flex items-center gap-4 rounded-md border border-border px-4 py-3 hover:bg-foreground/5"
             >
               <Icon className="h-5 w-5 shrink-0 text-gray-500" />
               <div className="font-medium">{postType.label}</div>
@@ -87,7 +87,7 @@ export default async function Home() {
         {session.user.scopes.includes("admin") && (
           <Link
             href="/admin"
-            className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+            className="flex items-center gap-4 rounded-md border border-border px-4 py-3 hover:bg-foreground/5"
           >
             <Shield className="h-5 w-5 shrink-0 text-gray-500" />
             <div className="font-medium">Admin</div>

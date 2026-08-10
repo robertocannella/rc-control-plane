@@ -1,19 +1,97 @@
 @import "tailwindcss";
 
+/* Theme tokens, contrast-checked (WCAG relative-luminance formula) against
+   each theme's own background — see scripts/check-theme-contrast.js. Light
+   and dark's --accent-foreground differ (white vs. dark) because a theme's
+   accent hue sits at a different lightness: dark/nord/dracula use a *light*
+   accent for contrast against a dark page, so button text on top of it has
+   to be dark, not white — white-on-accent measured 2.0-2.4:1 (fails) for
+   all three. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  /* Validated categorical palette (dataviz skill), capped at 3 slots since a
-     donut chart is an all-pairs form — see time-chart-data.ts. */
+  --surface: #f8f9fa;
+  --foreground: #202124;
+  --muted-foreground: #6b7280;
+  --border: #dadce0;
+  --accent: #1a73e8;
+  --accent-foreground: #ffffff;
+  /* Categorical chart palette, capped at 3 named slots since a donut chart
+     is an all-pairs form — see time-chart-data.ts. "Other" matches
+     --muted-foreground so it reads as the neutral bucket. */
   --chart-series-1: #2a78d6;
   --chart-series-2: #eb6834;
   --chart-series-3: #1baf7a;
-  --chart-series-other: #898781;
+  --chart-series-other: #6b7280;
+}
+
+:root[data-theme="dark"] {
+  --background: #131314;
+  --surface: #1e1f20;
+  --foreground: #e8eaed;
+  --muted-foreground: #9aa0a6;
+  --border: #3c4043;
+  --accent: #8ab4f8;
+  --accent-foreground: #131314;
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-other: #9aa0a6;
+}
+
+:root[data-theme="nord"] {
+  --background: #2e3440;
+  --surface: #3b4252;
+  --foreground: #d8dee9;
+  --muted-foreground: #81a1c1;
+  --border: #4c566a;
+  --accent: #88c0d0;
+  --accent-foreground: #2e3440;
+  --chart-series-1: #88c0d0;
+  --chart-series-2: #d08770;
+  --chart-series-3: #a3be8c;
+  --chart-series-other: #81a1c1;
+}
+
+:root[data-theme="dracula"] {
+  --background: #282a36;
+  --surface: #44475a;
+  --foreground: #f8f8f2;
+  --muted-foreground: #6272a4;
+  --border: #44475a;
+  --accent: #bd93f9;
+  --accent-foreground: #282a36;
+  --chart-series-1: #8be9fd;
+  --chart-series-2: #ffb86c;
+  --chart-series-3: #50fa7b;
+  --chart-series-other: #6272a4;
+}
+
+/* "System" (no explicit theme cookie yet) follows the OS preference,
+   applying the same values as the dark block above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #131314;
+    --surface: #1e1f20;
+    --foreground: #e8eaed;
+    --muted-foreground: #9aa0a6;
+    --border: #3c4043;
+    --accent: #8ab4f8;
+    --accent-foreground: #131314;
+    --chart-series-1: #3987e5;
+    --chart-series-2: #d95926;
+    --chart-series-3: #199e70;
+    --chart-series-other: #9aa0a6;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --animate-toast-in: toast-slide-down 300ms ease-out;
@@ -27,16 +105,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --chart-series-1: #3987e5;
-    --chart-series-2: #d95926;
-    --chart-series-3: #199e70;
   }
 }
 

@@ -36,7 +36,7 @@ export default async function UserDetailPage({
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
-      <Link href="/admin/users" className="self-start text-sm underline">
+      <Link href="/admin/users" className="self-start text-sm text-accent hover:underline">
         ← All users
       </Link>
       <div className="flex w-full max-w-2xl flex-col gap-1">

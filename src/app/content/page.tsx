@@ -29,7 +29,7 @@ export default async function ContentHubPage() {
               <Link
                 key={postType.slug}
                 href={`/content/${postType.slug}`}
-                className="flex items-center gap-4 rounded-md border px-4 py-3 hover:bg-black/5 dark:hover:bg-white/10"
+                className="flex items-center gap-4 rounded-md border border-border px-4 py-3 hover:bg-foreground/5"
               >
                 <Icon className="h-5 w-5 shrink-0 text-gray-500" />
                 <div className="flex-1">

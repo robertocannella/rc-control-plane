@@ -29,45 +29,68 @@ export default async function PostTypesPage() {
       <h1 className="text-2xl font-semibold">Post types</h1>
       <Link
         href="/admin/post-types/new"
-        className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+        className="text-sm font-medium text-accent hover:underline"
       >
-        New post type
+        + New post type
       </Link>
-      <div className="flex w-full max-w-2xl flex-col gap-3">
-        {postTypes.length === 0 && (
-          <p className="text-sm text-gray-500">No post types yet.</p>
+      <div className="w-full max-w-3xl overflow-x-auto rounded-md border border-border">
+        {postTypes.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">No post types yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface text-left text-xs font-medium text-muted-foreground">
+                <th className="px-4 py-2 font-medium">Label</th>
+                <th className="px-4 py-2 font-medium">Slug</th>
+                <th className="px-4 py-2 font-medium">Visibility</th>
+                <th className="px-4 py-2 font-medium">Fields</th>
+                <th className="px-4 py-2 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {postTypes.map((postType) => {
+                const Icon = getPostTypeIcon(postType.icon);
+                return (
+                  <tr
+                    key={postType.slug}
+                    className="border-b border-border last:border-0 hover:bg-foreground/5"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {postType.label}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {postType.slug}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {postType.visibility}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {postType.fields.length}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <Link
+                        href={`/admin/post-types/${postType.slug}/edit`}
+                        className="text-accent hover:underline"
+                      >
+                        Edit
+                      </Link>
+                      <span className="mx-2 text-border">·</span>
+                      <Link
+                        href={`/content/${postType.slug}`}
+                        className="text-accent hover:underline"
+                      >
+                        View content
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
-        {postTypes.map((postType) => {
-          const Icon = getPostTypeIcon(postType.icon);
-          return (
-            <div
-              key={postType.slug}
-              className="flex flex-wrap items-center gap-4 rounded-md border px-4 py-3"
-            >
-              <Icon className="h-5 w-5 shrink-0 text-gray-500" />
-              <div className="min-w-48 flex-1">
-                <div className="font-medium">{postType.label}</div>
-                <div className="text-sm text-gray-500">
-                  <span className="font-mono">{postType.slug}</span> ·{" "}
-                  {postType.visibility} · {postType.fields.length} field
-                  {postType.fields.length === 1 ? "" : "s"}
-                </div>
-              </div>
-              <Link
-                href={`/admin/post-types/${postType.slug}/edit`}
-                className="text-sm underline"
-              >
-                Edit
-              </Link>
-              <Link
-                href={`/content/${postType.slug}`}
-                className="text-sm underline"
-              >
-                View content
-              </Link>
-            </div>
-          );
-        })}
       </div>
     </main>
   );

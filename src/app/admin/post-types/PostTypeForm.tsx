@@ -216,10 +216,8 @@ export function PostTypeForm(props: PostTypeFormProps) {
                 onClick={() => setIcon(name)}
                 aria-pressed={selected}
                 title={iconLabel}
-                className={`flex h-10 w-10 items-center justify-center rounded-md border hover:bg-black/5 dark:hover:bg-white/10 ${
-                  selected
-                    ? "border-black dark:border-white"
-                    : "border-black/10 dark:border-white/10"
+                className={`flex h-10 w-10 items-center justify-center rounded-md border hover:bg-foreground/5 ${
+                  selected ? "border-accent" : "border-border"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -317,7 +315,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
                 ))}
               </select>
             ) : (
-              <span className="rounded-md bg-black/5 px-2 py-1.5 text-sm dark:bg-white/10">
+              <span className="rounded-md bg-foreground/5 px-2 py-1.5 text-sm">
                 {FIELD_TYPES.find((ft) => ft.value === field.type)?.label ??
                   field.type}
               </span>
@@ -410,7 +408,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
         <button
           type="button"
           onClick={addField}
-          className="self-start rounded-md border px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+          className="self-start rounded-md border border-border px-3 py-1.5 text-sm hover:bg-foreground/5"
         >
           Add field
         </button>
@@ -424,7 +422,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
 
       <button
         type="submit"
-        className="self-start rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+        className="self-start rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground hover:opacity-90"
       >
         {props.mode === "create" ? "Create post type" : "Save changes"}
       </button>
