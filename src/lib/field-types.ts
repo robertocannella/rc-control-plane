@@ -26,7 +26,7 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
   { value: "time", label: "Time of day", hasOptions: false },
   { value: "boolean", label: "Yes / No", hasOptions: false },
   { value: "select", label: "Select (choose one)", hasOptions: true },
-  { value: "image", label: "Image (URL)", hasOptions: false },
+  { value: "image", label: "Image (upload)", hasOptions: false },
   { value: "link", label: "Link (URL)", hasOptions: false },
   { value: "relation", label: "Related item", hasOptions: false },
 ];

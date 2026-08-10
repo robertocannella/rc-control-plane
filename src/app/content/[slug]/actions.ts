@@ -6,6 +6,11 @@ import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
 import { createPost, updatePost, deletePost, startPost } from "@/lib/posts";
 import { canEditPostType } from "@/lib/content-access";
+import {
+  isAllowedImageType,
+  isWithinUploadSizeLimit,
+  uploadImage,
+} from "@/lib/storage";
 
 export interface PostFormState {
   status: "idle" | "success" | "error";
@@ -83,6 +88,44 @@ export async function startPostAction(
 
   revalidatePath(`/content/${slug}`);
   redirect(`/content/${slug}/${result.id}/edit`);
+}
+
+export interface UploadImageState {
+  ok: boolean;
+  url?: string;
+  reason?: string;
+}
+
+// Invoked directly as an async function call from the client (not through a
+// <form action>), so a single field's file picker can upload immediately on
+// selection without submitting the rest of the post form.
+export async function uploadImageAction(
+  slug: string,
+  formData: FormData,
+): Promise<UploadImageState> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, reason: "Forbidden" };
+
+  const postType = await getPostType(slug);
+  if (!postType) return { ok: false, reason: "Post type not found." };
+  if (!canEditPostType(postType, session)) {
+    return { ok: false, reason: "Forbidden" };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, reason: "No file selected." };
+  }
+  if (!isAllowedImageType(file.type)) {
+    return { ok: false, reason: "Unsupported file type." };
+  }
+  if (!isWithinUploadSizeLimit(file.size)) {
+    return { ok: false, reason: "File is too large (max 8MB)." };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const url = await uploadImage(buffer, file.type, slug);
+  return { ok: true, url };
 }
 
 export async function deletePostAction(

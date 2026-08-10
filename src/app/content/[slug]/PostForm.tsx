@@ -10,6 +10,7 @@ import {
   createPostAction,
   updatePostAction,
   startPostAction,
+  uploadImageAction,
   type PostFormState,
 } from "./actions";
 
@@ -97,6 +98,7 @@ export function PostForm({
               {effectiveField.required && " *"}
             </label>
             {renderInput(
+              slug,
               effectiveField,
               post?.values[field.key],
               relationOptions?.[field.key],
@@ -118,6 +120,7 @@ export function PostForm({
 }
 
 function renderInput(
+  slug: string,
   field: FieldDef,
   value: unknown,
   relationOptions?: { id: string; label: string }[],
@@ -225,6 +228,13 @@ function renderInput(
         </select>
       );
     case "image":
+      return (
+        <ImageFieldInput
+          slug={slug}
+          fieldKey={field.key}
+          value={typeof value === "string" ? value : ""}
+        />
+      );
     case "link":
       return (
         <input
@@ -391,6 +401,90 @@ function EntryTimer({
       >
         Start
       </button>
+    </div>
+  );
+}
+
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // matches src/lib/storage.ts
+
+// Uploads immediately on file selection (a direct async call to the server
+// action, not a form submission), independent of the surrounding post
+// form — the resulting URL is carried into that form's own submission via
+// a plain hidden input, so every other field type still just sees a string.
+function ImageFieldInput({
+  slug,
+  fieldKey,
+  value,
+}: {
+  slug: string;
+  fieldKey: string;
+  value: string;
+}) {
+  const [url, setUrl] = useState(value);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Unsupported file type.");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError("File is too large (max 8MB).");
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await uploadImageAction(slug, formData);
+
+    setUploading(false);
+    if (!result.ok || !result.url) {
+      setError(result.reason ?? "Upload failed.");
+      return;
+    }
+    setUrl(result.url);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {url && (
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt=""
+            className="h-24 w-24 rounded-md border object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => setUrl("")}
+            className="text-sm text-red-600 underline"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        disabled={uploading}
+        className="rounded-md border px-3 py-1.5 text-sm"
+      />
+
+      {uploading && <p className="text-sm text-gray-500">Uploading…</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <input type="hidden" name={fieldKey} value={url} />
     </div>
   );
 }
