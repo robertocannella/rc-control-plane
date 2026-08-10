@@ -57,7 +57,7 @@ export function TimeChart({ result }: { result: TimeChartResult }) {
   );
 
   return (
-    <div className="flex flex-col items-center gap-6 text-gray-900 dark:text-white">
+    <div className="flex flex-col items-center gap-6 text-foreground">
       <div className="relative">
         <svg
           viewBox="0 0 200 200"

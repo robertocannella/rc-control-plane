@@ -57,8 +57,8 @@ function ChartTooltip({ active, label, payload }: TooltipContentProps) {
   if (!active || !payload?.length || typeof label !== "number") return null;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-zinc-500">{formatDate(label)}</div>
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm shadow-sm">
+      <div className="text-muted-foreground">{formatDate(label)}</div>
       <div className="font-medium">{Number(payload[0].value).toFixed(1)}</div>
     </div>
   );
@@ -143,8 +143,8 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
             className={[
               "rounded-lg border px-3 py-2 text-sm",
               range.kind === "preset" && range.days === option.days
-                ? "border-blue-600 bg-blue-600 text-white"
-                : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900",
+                ? "border-accent bg-accent text-accent-foreground"
+                : "border-border bg-surface",
             ].join(" ")}
           >
             {option.label}
@@ -155,13 +155,13 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
           <button
             type="button"
             onClick={() => setRange(DEFAULT_RANGE)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted-foreground"
           >
             Reset zoom
           </button>
         )}
 
-        <span className="text-sm text-zinc-500">
+        <span className="text-sm text-muted-foreground">
           Drag on the chart to zoom into a range
         </span>
       </div>
@@ -188,7 +188,7 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
         />
       </div>
 
-      <div className="h-[430px] w-full cursor-crosshair rounded-xl border border-zinc-200 p-2 select-none dark:border-zinc-800">
+      <div className="h-[430px] w-full cursor-crosshair rounded-xl border border-border p-2 select-none">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={visibleData}
@@ -241,7 +241,7 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 5 }}
-              className="text-blue-600 dark:text-blue-400"
+              className="text-accent"
             />
 
             {dragStart !== null && dragEnd !== null && (
@@ -251,7 +251,7 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
                 strokeOpacity={0.3}
                 fillOpacity={0.15}
                 fill="currentColor"
-                className="text-blue-600 dark:text-blue-400"
+                className="text-accent"
               />
             )}
 
@@ -277,8 +277,8 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="text-sm text-zinc-500">{label}</div>
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="text-sm text-muted-foreground">{label}</div>
       <div className="mt-1 font-medium">{value}</div>
     </div>
   );

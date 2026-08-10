@@ -31,7 +31,7 @@ export function LogWeightForm() {
     <form
       ref={formRef}
       action={formAction}
-      className="flex flex-wrap items-end gap-2 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800"
+      className="flex flex-wrap items-end gap-2 rounded-xl border border-border p-3"
     >
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" htmlFor="date">
@@ -63,7 +63,7 @@ export function LogWeightForm() {
 
       <button
         type="submit"
-        className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+        className="rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground hover:opacity-90"
       >
         Log
       </button>

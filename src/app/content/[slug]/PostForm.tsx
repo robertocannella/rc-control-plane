@@ -111,7 +111,7 @@ export function PostForm({
       )}
       <button
         type="submit"
-        className="self-start rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+        className="self-start rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground hover:opacity-90"
       >
         {post ? "Save changes" : "Create"}
       </button>
@@ -397,7 +397,7 @@ function EntryTimer({
         type="submit"
         formAction={startPostAction.bind(null, slug, startFieldKey, dateFieldKey)}
         formNoValidate
-        className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+        className="rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground hover:opacity-90"
       >
         Start
       </button>

@@ -83,7 +83,7 @@ export default async function PostDetailPage({
           <div className="flex shrink-0 items-center gap-4">
             <Link
               href={`/content/${slug}/${post.id}/edit`}
-              className="text-sm underline"
+              className="text-sm text-accent hover:underline"
             >
               Edit
             </Link>
@@ -91,7 +91,7 @@ export default async function PostDetailPage({
           </div>
         )}
       </div>
-      <div className="flex w-full max-w-2xl flex-col divide-y divide-black/10 rounded-md border dark:divide-white/10">
+      <div className="flex w-full max-w-2xl flex-col divide-y divide-border rounded-md border border-border">
         {postType.fields.map((field) => (
           <div key={field.key} className="flex flex-col gap-1 px-4 py-3">
             <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">

@@ -8,6 +8,14 @@ import { getPostTitle } from "./PostFieldDisplay";
 import { buildTimeChartData } from "./time-chart-data";
 import { TimeChart } from "./TimeChart";
 
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 export default async function PostTypeContentListPage({
   params,
 }: {
@@ -36,36 +44,55 @@ export default async function PostTypeContentListPage({
       {editable && (
         <Link
           href={`/content/${slug}/new`}
-          className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
+          className="text-sm font-medium text-accent hover:underline"
         >
-          New {postType.label.toLowerCase()}
+          + New {postType.label.toLowerCase()}
         </Link>
       )}
-      <div className="flex w-full max-w-2xl flex-col gap-3">
-        {posts.length === 0 && (
-          <p className="text-sm text-gray-500">Nothing here yet.</p>
+      <div className="w-full max-w-3xl overflow-x-auto rounded-md border border-border">
+        {posts.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">Nothing here yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface text-left text-xs font-medium text-muted-foreground">
+                <th className="px-4 py-2 font-medium">Title</th>
+                <th className="px-4 py-2 font-medium">Created</th>
+                {editable && <th className="px-4 py-2 font-medium" />}
+              </tr>
+            </thead>
+            <tbody>
+              {posts.map((post) => (
+                <tr
+                  key={post.id}
+                  className="border-b border-border last:border-0 hover:bg-foreground/5"
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/content/${slug}/${post.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {getPostTitle(postType, post)}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {formatDate(post.createdAt)}
+                  </td>
+                  {editable && (
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/content/${slug}/${post.id}/edit`}
+                        className="text-accent hover:underline"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-        {posts.map((post) => (
-          <div
-            key={post.id}
-            className="flex flex-wrap items-center gap-4 rounded-md border px-4 py-3"
-          >
-            <Link
-              href={`/content/${slug}/${post.id}`}
-              className="min-w-48 flex-1 font-medium hover:underline"
-            >
-              {getPostTitle(postType, post)}
-            </Link>
-            {editable && (
-              <Link
-                href={`/content/${slug}/${post.id}/edit`}
-                className="text-sm underline"
-              >
-                Edit
-              </Link>
-            )}
-          </div>
-        ))}
       </div>
     </main>
   );

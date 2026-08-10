@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
 import type { Session } from "next-auth";
@@ -7,6 +8,7 @@ import { auth, signIn, signOut } from "@/auth";
 import { listPostTypes } from "@/lib/post-types";
 import { canViewPostType } from "@/lib/content-access";
 import { getPostTypeIcon } from "@/lib/post-type-icons";
+import { THEME_COOKIE_NAME, isThemeName } from "@/lib/theme";
 import { Home, Layers, Scale, Shield } from "lucide-react";
 import "./globals.css";
 
@@ -78,10 +80,14 @@ export default async function RootLayout({
 }>) {
   const session = await auth();
   const navItems = await buildNavItems(session);
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get(THEME_COOKIE_NAME)?.value;
+  const theme = isThemeName(themeCookie) ? themeCookie : null;
 
   return (
     <html
       lang="en"
+      data-theme={theme ?? undefined}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -89,6 +95,7 @@ export default async function RootLayout({
           <AppShell
             navItems={navItems}
             user={session?.user}
+            initialTheme={theme}
             signOutAction={
               session?.user
                 ? async () => {
