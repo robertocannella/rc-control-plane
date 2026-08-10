@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { loadWeightHistory } from "@/lib/weight-history";
 import { WeightHistoryChart } from "@/components/weight-history-chart";
+import { LogWeightForm } from "@/components/log-weight-form";
 
 export default async function WeightHistoryPage() {
   const session = await auth();
@@ -31,6 +32,8 @@ export default async function WeightHistoryPage() {
           {data.length.toLocaleString()} daily readings
         </p>
       </header>
+
+      <LogWeightForm />
 
       <WeightHistoryChart data={data} />
     </main>

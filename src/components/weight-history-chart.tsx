@@ -6,8 +6,10 @@ import {
   AreaChart,
   Brush,
   CartesianGrid,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
+  type MouseHandlerDataParam,
   type TooltipContentProps,
   XAxis,
   YAxis,
@@ -33,6 +35,12 @@ type WeightHistoryChartProps = {
   data: WeightPoint[];
 };
 
+type RangeSelection =
+  | { kind: "preset"; days: number | null }
+  | { kind: "custom"; start: number; end: number };
+
+const DEFAULT_RANGE: RangeSelection = { kind: "preset", days: 365 };
+
 function formatDate(timestamp: number): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -57,15 +65,50 @@ function ChartTooltip({ active, label, payload }: TooltipContentProps) {
 }
 
 export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
-  const [selectedDays, setSelectedDays] = useState<number | null>(365);
+  const [range, setRange] = useState<RangeSelection>(DEFAULT_RANGE);
+
+  // Tracks an in-progress click-and-drag selection on the chart itself,
+  // independent of `range` — only committed to `range` on mouse-up, so a
+  // drag that gets cancelled (or is just a click) never changes anything.
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragEnd, setDragEnd] = useState<number | null>(null);
 
   const visibleData = useMemo(() => {
-    if (selectedDays === null || data.length <= selectedDays) {
+    if (range.kind === "custom") {
+      return data.filter(
+        (point) => point.timestamp >= range.start && point.timestamp <= range.end,
+      );
+    }
+
+    if (range.days === null || data.length <= range.days) {
       return data;
     }
 
-    return data.slice(-selectedDays);
-  }, [data, selectedDays]);
+    return data.slice(-range.days);
+  }, [data, range]);
+
+  function handleMouseDown(state: MouseHandlerDataParam) {
+    if (typeof state.activeLabel !== "number") return;
+    setDragStart(state.activeLabel);
+    setDragEnd(state.activeLabel);
+  }
+
+  function handleMouseMove(state: MouseHandlerDataParam) {
+    if (dragStart === null || typeof state.activeLabel !== "number") return;
+    setDragEnd(state.activeLabel);
+  }
+
+  function handleMouseUp() {
+    if (dragStart !== null && dragEnd !== null && dragStart !== dragEnd) {
+      setRange({
+        kind: "custom",
+        start: Math.min(dragStart, dragEnd),
+        end: Math.max(dragStart, dragEnd),
+      });
+    }
+    setDragStart(null);
+    setDragEnd(null);
+  }
 
   const statistics = useMemo(() => {
     if (visibleData.length === 0) {
@@ -91,22 +134,36 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {ranges.map((range) => (
+      <div className="flex flex-wrap items-center gap-2">
+        {ranges.map((option) => (
           <button
-            key={range.label}
+            key={option.label}
             type="button"
-            onClick={() => setSelectedDays(range.days)}
+            onClick={() => setRange({ kind: "preset", days: option.days })}
             className={[
               "rounded-lg border px-3 py-2 text-sm",
-              selectedDays === range.days
+              range.kind === "preset" && range.days === option.days
                 ? "border-blue-600 bg-blue-600 text-white"
                 : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900",
             ].join(" ")}
           >
-            {range.label}
+            {option.label}
           </button>
         ))}
+
+        {range.kind === "custom" && (
+          <button
+            type="button"
+            onClick={() => setRange(DEFAULT_RANGE)}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            Reset zoom
+          </button>
+        )}
+
+        <span className="text-sm text-zinc-500">
+          Drag on the chart to zoom into a range
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -131,10 +188,13 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
         />
       </div>
 
-      <div className="h-[430px] w-full rounded-xl border border-zinc-200 p-2 dark:border-zinc-800">
+      <div className="h-[430px] w-full cursor-crosshair rounded-xl border border-zinc-200 p-2 select-none dark:border-zinc-800">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={visibleData}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
             margin={{
               top: 20,
               right: 16,
@@ -183,6 +243,17 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
               activeDot={{ r: 5 }}
               className="text-blue-600 dark:text-blue-400"
             />
+
+            {dragStart !== null && dragEnd !== null && (
+              <ReferenceArea
+                x1={dragStart}
+                x2={dragEnd}
+                strokeOpacity={0.3}
+                fillOpacity={0.15}
+                fill="currentColor"
+                className="text-blue-600 dark:text-blue-400"
+              />
+            )}
 
             <Brush
               dataKey="timestamp"
