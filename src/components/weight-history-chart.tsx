@@ -7,6 +7,7 @@ import {
   Brush,
   CartesianGrid,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   type MouseHandlerDataParam,
@@ -33,19 +34,24 @@ const ranges: RangeOption[] = [
 
 type WeightHistoryChartProps = {
   data: WeightPoint[];
+  goal?: number | null;
 };
 
 type RangeSelection =
   | { kind: "preset"; days: number | null }
   | { kind: "custom"; start: number; end: number };
 
-const DEFAULT_RANGE: RangeSelection = { kind: "preset", days: 365 };
+const DEFAULT_RANGE: RangeSelection = { kind: "preset", days: 90 };
 
+// Points are UTC-midnight timestamps for a calendar date with no
+// time-of-day meaning (see weight-history.ts) — format in UTC too, or a
+// viewer in a timezone behind UTC would see every date roll back a day.
 function formatDate(timestamp: number): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   }).format(new Date(timestamp));
 }
 
@@ -64,7 +70,7 @@ function ChartTooltip({ active, label, payload }: TooltipContentProps) {
   );
 }
 
-export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
+export function WeightHistoryChart({ data, goal }: WeightHistoryChartProps) {
   const [range, setRange] = useState<RangeSelection>(DEFAULT_RANGE);
 
   // Tracks an in-progress click-and-drag selection on the chart itself,
@@ -220,18 +226,39 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
                 new Intl.DateTimeFormat("en-US", {
                   month: "short",
                   year: "2-digit",
+                  timeZone: "UTC",
                 }).format(new Date(value))
               }
               minTickGap={35}
             />
 
             <YAxis
-              domain={["auto", "auto"]}
+              domain={[
+                (dataMin: number) =>
+                  goal != null ? Math.min(dataMin, goal) : dataMin,
+                (dataMax: number) =>
+                  goal != null ? Math.max(dataMax, goal) : dataMax,
+              ]}
               width={45}
               tickFormatter={(value: number) => value.toFixed(0)}
             />
 
-            <Tooltip content={ChartTooltip} />
+            <Tooltip content={ChartTooltip} position={{ y: 0 }} />
+
+            {goal != null && (
+              <ReferenceLine
+                y={goal}
+                stroke="var(--muted-foreground)"
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: `Goal: ${goal.toFixed(1)}`,
+                  position: "insideBottomRight",
+                  fill: "var(--muted-foreground)",
+                  fontSize: 12,
+                }}
+              />
+            )}
 
             <Area
               type="monotone"
@@ -265,6 +292,7 @@ export function WeightHistoryChart({ data }: WeightHistoryChartProps) {
                 new Intl.DateTimeFormat("en-US", {
                   month: "short",
                   year: "2-digit",
+                  timeZone: "UTC",
                 }).format(new Date(value))
               }
             />

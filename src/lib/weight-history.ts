@@ -15,12 +15,16 @@ function weightEntriesCollection() {
   return firestore.collection("weightEntries");
 }
 
-// `new Date("YYYY-MM-DD")` parses as UTC midnight, which disagrees with the
-// local-time constructor used everywhere else in the app and can silently
-// shift the point by a day — parse the parts explicitly instead.
+// These are calendar dates with no time-of-day meaning (a daily weight
+// reading), so the resulting timestamp is anchored to UTC midnight rather
+// than the server's local timezone — Cloud Run runs in UTC, but a viewer
+// in another timezone reading the timestamp back would otherwise see it
+// silently roll back a day (server-local UTC midnight rendered in, say,
+// US Eastern lands the evening before). The chart's own date formatting
+// (weight-history-chart.tsx) matches this by also formatting in UTC.
 function parseLocalDate(value: string): Date {
   const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 export function formatLocalDateValue(date: Date): string {
@@ -46,4 +50,21 @@ export async function logWeightEntry(date: string, total: number): Promise<void>
   await weightEntriesCollection()
     .doc(date)
     .set({ date, total, updatedAt: new Date() });
+}
+
+// A single scalar target, not a history — one fixed-ID doc rather than a
+// collection, matching how there's only ever one "current" goal.
+function weightGoalDoc() {
+  return firestore.collection("weightGoal").doc("current");
+}
+
+export async function loadWeightGoal(): Promise<number | null> {
+  const snapshot = await weightGoalDoc().get();
+  if (!snapshot.exists) return null;
+  const target = snapshot.data()?.target;
+  return typeof target === "number" ? target : null;
+}
+
+export async function setWeightGoal(target: number): Promise<void> {
+  await weightGoalDoc().set({ target, updatedAt: new Date() });
 }

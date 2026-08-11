@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { loadWeightHistory } from "@/lib/weight-history";
+import { loadWeightHistory, loadWeightGoal } from "@/lib/weight-history";
 import { WeightHistoryChart } from "@/components/weight-history-chart";
 import { LogWeightForm } from "@/components/log-weight-form";
+import { SetWeightGoalForm } from "@/components/set-weight-goal-form";
 
 export default async function WeightHistoryPage() {
   const session = await auth();
@@ -22,7 +23,7 @@ export default async function WeightHistoryPage() {
     );
   }
 
-  const data = await loadWeightHistory();
+  const [data, goal] = await Promise.all([loadWeightHistory(), loadWeightGoal()]);
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-5 px-4 py-8">
@@ -33,9 +34,12 @@ export default async function WeightHistoryPage() {
         </p>
       </header>
 
-      <LogWeightForm />
+      <div className="flex flex-wrap gap-3">
+        <LogWeightForm />
+        <SetWeightGoalForm currentGoal={goal} />
+      </div>
 
-      <WeightHistoryChart data={data} />
+      <WeightHistoryChart data={data} goal={goal} />
     </main>
   );
 }
