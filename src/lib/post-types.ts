@@ -13,6 +13,7 @@ export interface FieldDef {
   required: boolean;
   options?: string[];
   relatedPostType?: string; // slug of the post type this "relation" field points to
+  aiSuggest?: boolean; // relation fields only — shows a "Suggest" button backed by AiSettings
 }
 
 /**
@@ -82,6 +83,7 @@ function sanitizeFieldDef(raw: unknown): FieldDef | null {
       return null;
     }
     field.relatedPostType = r.relatedPostType;
+    field.aiSuggest = r.aiSuggest === true;
   }
 
   return field;
@@ -191,22 +193,21 @@ export async function updatePostType(
   });
 }
 
+// Cascades: every post under this post type is deleted along with the
+// post type itself, since a post type can't meaningfully exist without
+// its schema. `recursiveDelete` batches internally regardless of
+// collection size, unlike a manual query+loop. This is irreversible —
+// the caller is expected to have already gotten explicit confirmation
+// (see PostTypeDeleteButton's confirm() dialog, which names the post
+// count before submitting).
 export async function deletePostType(
   slug: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const postsSnapshot = await firestore
+  const postsRef = firestore
     .collection("postTypes")
     .doc(slug)
-    .collection("posts")
-    .limit(1)
-    .get();
-
-  if (!postsSnapshot.empty) {
-    return {
-      ok: false,
-      reason: "Delete all posts of this type before deleting the post type.",
-    };
-  }
+    .collection("posts");
+  await firestore.recursiveDelete(postsRef);
 
   await firestore.collection("postTypes").doc(slug).delete();
   return { ok: true };

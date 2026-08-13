@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TimeChartDimensionMeta, TimeChartFact } from "./time-chart-data";
-import { formatDurationMinutes as formatHours } from "./duration";
+import { formatDurationMinutes as formatHours } from "@/lib/duration";
 
 const RADIUS = 75;
 const STROKE_WIDTH = 30;

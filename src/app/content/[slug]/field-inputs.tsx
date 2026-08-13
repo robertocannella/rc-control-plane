@@ -4,8 +4,13 @@ import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FieldDef } from "@/lib/post-types";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { uploadImageAction, quickCreateRelatedPostAction } from "./actions";
-import type { QuickCreateState } from "./actions";
+import { useToast } from "@/components/toast-provider";
+import {
+  uploadImageAction,
+  quickCreateRelatedPostAction,
+  suggestRelationValueAction,
+} from "./actions";
+import type { QuickCreateState, SuggestRelationState } from "./actions";
 import type { RelationFieldData, RelationOption } from "./relation-options";
 
 const common = "rounded-md border px-3 py-1.5 text-sm";
@@ -27,6 +32,12 @@ export function renderInput(
   relationData: RelationFieldData | undefined,
   allowQuickAdd: boolean,
   idPrefix = "",
+  // Relation fields with aiSuggest only — lets the caller show something
+  // (e.g. a label icon) next to the field to reflect whether its current
+  // value came from a "Suggest" click or a manual choice. Not threaded
+  // through from QuickAddModal, since nested fields there never get a
+  // Suggest button in the first place.
+  onAiSuggested?: (suggested: boolean) => void,
 ) {
   const id = `${idPrefix}${field.key}`;
 
@@ -116,10 +127,12 @@ export function renderInput(
         return (
           <RelationFieldInput
             id={id}
+            slug={slug}
             field={field}
             value={value}
             options={relationData.options}
             quickAdd={relationData.quickAdd}
+            onAiSuggested={onAiSuggested}
           />
         );
       }
@@ -265,51 +278,99 @@ function ImageFieldInput({
 // uncontrolled like every other field in the form — a deliberate one-off
 // exception, needed so a newly-created option can be appended and selected
 // programmatically after the modal closes.
+const initialSuggestState: SuggestRelationState = { status: "idle" };
+
 function RelationFieldInput({
   id,
+  slug,
   field,
   value,
   options,
   quickAdd,
+  onAiSuggested,
 }: {
   id: string;
+  slug: string;
   field: FieldDef;
   value: unknown;
   options: RelationOption[];
   quickAdd: NonNullable<RelationFieldData["quickAdd"]>;
+  onAiSuggested?: (suggested: boolean) => void;
 }) {
   const [currentOptions, setCurrentOptions] = useState(options);
   const [selected, setSelected] = useState(
     typeof value === "string" ? value : "",
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const showToast = useToast();
+
+  // Reads every other field's live (possibly-unsaved) value straight off
+  // the surrounding <form> via native FormData, rather than enumerating
+  // sibling field ids by hand — works regardless of which fields the
+  // schema actually has.
+  async function handleSuggest(e: React.MouseEvent<HTMLButtonElement>) {
+    const form = e.currentTarget.closest("form");
+    if (!form) return;
+    setSuggesting(true);
+    const result = await suggestRelationValueAction(
+      slug,
+      field.key,
+      initialSuggestState,
+      new FormData(form),
+    );
+    setSuggesting(false);
+    if (result.status === "success" && result.id) {
+      setSelected(result.id);
+      onAiSuggested?.(true);
+    } else {
+      showToast(result.message ?? "Couldn't get a suggestion.");
+    }
+  }
 
   return (
-    <div className="flex items-center gap-2">
-      <select
-        id={id}
-        name={field.key}
-        value={selected}
-        onChange={(e) => setSelected(e.target.value)}
-        required={field.required}
-        className={`${common} flex-1`}
-      >
-        <option value="" disabled>
-          Choose...
-        </option>
-        {currentOptions.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          id={id}
+          name={field.key}
+          value={selected}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            // A manual change means the current value is no longer (just)
+            // the AI's pick, even if it started that way.
+            onAiSuggested?.(false);
+          }}
+          required={field.required}
+          className={`${common} w-full min-w-0 sm:w-auto sm:flex-1`}
+        >
+          <option value="" disabled>
+            Choose...
           </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        onClick={() => setModalOpen(true)}
-        className="text-sm whitespace-nowrap text-accent hover:underline"
-      >
-        + Add new
-      </button>
+          {currentOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="text-sm whitespace-nowrap text-accent hover:underline"
+        >
+          + Add new
+        </button>
+        {field.aiSuggest && (
+          <button
+            type="button"
+            onClick={handleSuggest}
+            disabled={suggesting}
+            className="text-sm whitespace-nowrap text-accent hover:underline disabled:opacity-50"
+          >
+            {suggesting ? "Suggesting…" : "✨ Suggest"}
+          </button>
+        )}
+      </div>
       {modalOpen && (
         <QuickAddModal
           relatedSlug={field.relatedPostType!}
@@ -319,6 +380,7 @@ function RelationFieldInput({
           onCreated={(id, label) => {
             setCurrentOptions((prev) => [...prev, { id, label }]);
             setSelected(id);
+            onAiSuggested?.(false);
             setModalOpen(false);
           }}
         />

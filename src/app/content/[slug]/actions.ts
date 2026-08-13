@@ -4,13 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
-import { createPost, updatePost, deletePost, startPost, getPost } from "@/lib/posts";
+import { createPost, updatePost, deletePost, startPost, getPost, listPosts } from "@/lib/posts";
 import { canEditPostType } from "@/lib/content-access";
 import {
   isAllowedImageType,
   isWithinUploadSizeLimit,
   uploadImage,
 } from "@/lib/storage";
+import { loadAiSettings } from "@/lib/ai-settings";
+import { callAi } from "@/lib/ai-provider";
 import { getPostTitle } from "./PostFieldDisplay";
 
 export interface PostFormState {
@@ -129,6 +131,128 @@ export async function quickCreateRelatedPostAction(
   return { status: "success", id: result.id, label };
 }
 
+export interface SuggestRelationState {
+  status: "idle" | "success" | "error";
+  message?: string;
+  id?: string;
+  label?: string;
+}
+
+// Asks the admin-configured AI provider to pick the best-matching option
+// for a relation field, given the rest of the entry's currently-typed
+// values — generic to any relation field with `aiSuggest` enabled, not
+// tied to a specific post type/field key. Invoked directly from the
+// client (not through a <form action>), same pattern as
+// uploadImageAction, since it's a side action alongside the real submit.
+export async function suggestRelationValueAction(
+  slug: string,
+  fieldKey: string,
+  _prevState: SuggestRelationState,
+  formData: FormData,
+): Promise<SuggestRelationState> {
+  const session = await auth();
+  if (!session?.user) return { status: "error", message: "Forbidden" };
+
+  const postType = await getPostType(slug);
+  if (!postType) return { status: "error", message: "Post type not found." };
+  if (!canEditPostType(postType, session)) {
+    return { status: "error", message: "Forbidden" };
+  }
+
+  const field = postType.fields.find(
+    (f) => f.key === fieldKey && f.type === "relation" && f.aiSuggest && f.relatedPostType,
+  );
+  if (!field || !field.relatedPostType) {
+    return { status: "error", message: "AI suggestions aren't enabled for this field." };
+  }
+
+  const settings = await loadAiSettings();
+  if (!settings) {
+    return {
+      status: "error",
+      message: "AI isn't configured — set it up in Admin → AI Settings.",
+    };
+  }
+
+  const relatedPostType = await getPostType(field.relatedPostType);
+  if (!relatedPostType) {
+    return { status: "error", message: "Related post type not found." };
+  }
+  const relatedPosts = await listPosts(field.relatedPostType);
+  // Every text-ish field on the related post type besides the title
+  // itself (fields[0], per getPostTitle's convention) — e.g. R&D
+  // Categories' "Examples" field — carries real disambiguating signal
+  // the AI should see, not just the bare title.
+  const descriptiveFields = relatedPostType.fields.filter(
+    (f, index) =>
+      index !== 0 &&
+      (f.type === "text" || f.type === "longtext" || f.type === "richtext"),
+  );
+  const candidates = relatedPosts.map((post) => {
+    const descriptionParts: string[] = [];
+    for (const f of descriptiveFields) {
+      const raw = post.values[f.key];
+      if (typeof raw !== "string" || !raw.trim()) continue;
+      const text = f.type === "richtext" ? raw.replace(/<[^>]*>/g, " ").trim() : raw.trim();
+      if (text) descriptionParts.push(`${f.label}: ${text}`);
+    }
+    return {
+      id: post.id,
+      label: getPostTitle(relatedPostType, post),
+      description: descriptionParts.join(" | "),
+    };
+  });
+  if (candidates.length === 0) {
+    return { status: "error", message: "No options to suggest from yet." };
+  }
+
+  const contextLines: string[] = [];
+  for (const other of postType.fields) {
+    if (other.key === fieldKey) continue;
+    if (other.type !== "text" && other.type !== "longtext" && other.type !== "richtext") {
+      continue;
+    }
+    const value = formData.get(other.key);
+    if (typeof value === "string" && value.trim()) {
+      contextLines.push(`${other.label}: ${value.trim()}`);
+    }
+  }
+
+  const systemPrompt =
+    "You are helping classify a form entry into one of a fixed set of " +
+    "options. Reply with ONLY the id of the single best-matching option " +
+    "below, and nothing else — no explanation, no punctuation.";
+  const userPrompt = [
+    contextLines.length > 0 ? contextLines.join("\n") : "(no additional details provided)",
+    "",
+    "Options:",
+    ...candidates.map((c) =>
+      c.description ? `${c.id}: ${c.label} — ${c.description}` : `${c.id}: ${c.label}`,
+    ),
+  ].join("\n");
+
+  let raw: string;
+  try {
+    raw = await callAi(settings, systemPrompt, userPrompt);
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : "AI request failed.",
+    };
+  }
+
+  const answer = raw.trim();
+  const match = candidates.find((c) => c.id === answer);
+  if (!match) {
+    return {
+      status: "error",
+      message: "AI's answer didn't match a known option — pick manually.",
+    };
+  }
+
+  return { status: "success", id: match.id, label: match.label };
+}
+
 export interface UploadImageState {
   ok: boolean;
   url?: string;
@@ -167,6 +291,12 @@ export async function uploadImageAction(
   return { ok: true, url };
 }
 
+// Redirects server-side (like startPostAction) rather than returning
+// success and letting the client push — the page that invoked this
+// (detail or edit) re-renders itself against fresh data as part of any
+// form action submission, and that page's own `getPost` would now find
+// nothing and 404 before a client-side router.push ever got a chance to
+// run. redirect() preempts that race entirely.
 export async function deletePostAction(
   slug: string,
   postId: string,
@@ -184,5 +314,5 @@ export async function deletePostAction(
 
   await deletePost(slug, postId);
   revalidatePath(`/content/${slug}`);
-  return { status: "success" };
+  redirect(`/content/${slug}`);
 }

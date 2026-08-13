@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import {
   createPostType,
@@ -117,6 +118,11 @@ export async function updatePostTypeAction(
   return { status: "success" };
 }
 
+// Redirects server-side rather than returning success and letting the
+// client push — the edit page this button lives on re-renders itself
+// against fresh data as part of any form action submission, and its own
+// `getPostType` would now find nothing and 404 before a client-side
+// router.push ever got a chance to run (same fix as deletePostAction).
 export async function deletePostTypeAction(
   slug: string,
   _prevState: PostTypeFormState,
@@ -134,5 +140,5 @@ export async function deletePostTypeAction(
 
   revalidatePath("/admin/post-types");
   revalidatePath("/content");
-  return { status: "success" };
+  redirect("/admin/post-types");
 }

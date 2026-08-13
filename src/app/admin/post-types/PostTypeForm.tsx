@@ -30,6 +30,7 @@ interface FieldRow {
   required: boolean;
   optionsText: string; // comma-separated, only meaningful when type === "select"
   relatedPostType: string; // slug, only meaningful when type === "relation"
+  aiSuggest: boolean; // only meaningful when type === "relation"
 }
 
 function slugify(label: string): string {
@@ -82,6 +83,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
       isNew: false,
       optionsText: (field.options ?? []).join(", "),
       relatedPostType: field.relatedPostType ?? "",
+      aiSuggest: field.aiSuggest ?? false,
     })),
   );
 
@@ -107,6 +109,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
         required: false,
         optionsText: "",
         relatedPostType: props.postTypes[0]?.slug ?? "",
+        aiSuggest: false,
       },
     ]);
   }
@@ -150,7 +153,7 @@ export function PostTypeForm(props: PostTypeFormProps) {
         }
       : {}),
     ...(field.type === "relation"
-      ? { relatedPostType: field.relatedPostType }
+      ? { relatedPostType: field.relatedPostType, aiSuggest: field.aiSuggest }
       : {}),
   }));
 
@@ -374,6 +377,19 @@ export function PostTypeForm(props: PostTypeFormProps) {
                   Create another post type first.
                 </span>
               ))}
+
+            {field.type === "relation" && (
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={field.aiSuggest}
+                  onChange={(e) =>
+                    updateField(field.rowId, { aiSuggest: e.target.checked })
+                  }
+                />
+                AI suggest
+              </label>
+            )}
 
             <div className="flex items-center gap-1">
               <button

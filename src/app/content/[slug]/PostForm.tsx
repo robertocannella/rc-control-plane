@@ -92,19 +92,13 @@ export function PostForm({
           ? { ...field, required: false }
           : field;
         return (
-          <div key={field.key} className="flex flex-col gap-1">
-            <label className="text-sm font-medium" htmlFor={field.key}>
-              {field.label}
-              {effectiveField.required && " *"}
-            </label>
-            {renderInput(
-              slug,
-              effectiveField,
-              post?.values[field.key],
-              relationOptions?.[field.key],
-              true,
-            )}
-          </div>
+          <FormFieldRow
+            key={field.key}
+            slug={slug}
+            field={effectiveField}
+            value={post?.values[field.key]}
+            relationData={relationOptions?.[field.key]}
+          />
         );
       })}
       {state.status === "error" && (
@@ -117,6 +111,38 @@ export function PostForm({
         {post ? "Save changes" : "Create"}
       </button>
     </form>
+  );
+}
+
+// Owns the "was this value set by AI Suggest?" state for one field row —
+// needs to live above renderInput's call site since the icon sits next to
+// the label, which is rendered separately from (and before) the input
+// itself. Only relation fields with aiSuggest ever flip this to true.
+function FormFieldRow({
+  slug,
+  field,
+  value,
+  relationData,
+}: {
+  slug: string;
+  field: FieldDef;
+  value: unknown;
+  relationData?: RelationFieldData;
+}) {
+  const [aiSuggested, setAiSuggested] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label
+        className="flex items-center gap-1 text-sm font-medium"
+        htmlFor={field.key}
+      >
+        {field.label}
+        {field.required && " *"}
+        {aiSuggested && <span title="Set by AI suggestion">✨</span>}
+      </label>
+      {renderInput(slug, field, value, relationData, true, "", setAiSuggested)}
+    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 // Shared by anything that reads a schema's first two "time of day" fields
-// as a start/end pair (the timer widget, the time-tracker chart, and the
-// list page's optional Start/End/Duration columns) — same convention
-// throughout: not tied to specific field keys/labels.
+// as a start/end pair (the timer widget, the time-tracker chart, the list
+// page's optional Start/End/Duration columns, and overlap validation on
+// save) — same convention throughout: not tied to specific field keys/labels.
 export function computeDurationMinutes(start: unknown, end: unknown): number {
   if (typeof start !== "string" || typeof end !== "string") return 0;
   const [startHours, startMinutes] = start.split(":").map(Number);
