@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
-import { createPost, updatePost, deletePost, startPost } from "@/lib/posts";
+import { createPost, updatePost, deletePost, startPost, getPost } from "@/lib/posts";
 import { canEditPostType } from "@/lib/content-access";
 import {
   isAllowedImageType,
   isWithinUploadSizeLimit,
   uploadImage,
 } from "@/lib/storage";
+import { getPostTitle } from "./PostFieldDisplay";
 
 export interface PostFormState {
   status: "idle" | "success" | "error";
@@ -88,6 +89,44 @@ export async function startPostAction(
 
   revalidatePath(`/content/${slug}`);
   redirect(`/content/${slug}/${result.id}/edit`);
+}
+
+export interface QuickCreateState {
+  status: "idle" | "success" | "error";
+  message?: string;
+  id?: string;
+  label?: string;
+}
+
+// Creates a post under a *related* post type (e.g. a new Project from the
+// Project dropdown on a Time Tracker entry) without navigating away — hands
+// back the new post's id/label so the dropdown that triggered it can add
+// and select the option in place, unlike createPostAction which expects the
+// caller to redirect on success.
+export async function quickCreateRelatedPostAction(
+  relatedSlug: string,
+  _prevState: QuickCreateState,
+  formData: FormData,
+): Promise<QuickCreateState> {
+  const session = await auth();
+  if (!session?.user) return { status: "error", message: "Forbidden" };
+
+  const relatedPostType = await getPostType(relatedSlug);
+  if (!relatedPostType) {
+    return { status: "error", message: "Post type not found." };
+  }
+  if (!canEditPostType(relatedPostType, session)) {
+    return { status: "error", message: "Forbidden" };
+  }
+
+  const result = await createPost(relatedSlug, formData, session.user.id);
+  if (!result.ok) return { status: "error", message: result.reason };
+
+  const created = await getPost(relatedSlug, result.id);
+  const label = created ? getPostTitle(relatedPostType, created) : "Untitled";
+
+  revalidatePath(`/content/${relatedSlug}`);
+  return { status: "success", id: result.id, label };
 }
 
 export interface UploadImageState {
