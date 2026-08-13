@@ -4,6 +4,7 @@ import { getPostType } from "@/lib/post-types";
 import { getPost } from "@/lib/posts";
 import { canEditPostType } from "@/lib/content-access";
 import { PostForm } from "../../PostForm";
+import { PostDeleteButton } from "../../PostDeleteButton";
 import { buildRelationOptions } from "../../relation-options";
 
 export default async function EditPostPage({
@@ -46,6 +47,7 @@ export default async function EditPostPage({
         post={post}
         relationOptions={relationOptions}
       />
+      <PostDeleteButton slug={slug} postId={post.id} />
     </main>
   );
 }

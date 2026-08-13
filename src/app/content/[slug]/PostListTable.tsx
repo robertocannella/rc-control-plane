@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { PostType } from "@/lib/post-types";
 import type { Post } from "@/lib/posts";
 import { getPostTitle } from "./PostFieldDisplay";
-import { computeDurationMinutes, formatDurationMinutes } from "./duration";
+import { computeDurationMinutes, formatDurationMinutes } from "@/lib/duration";
 
 type OptionalColumn = "start" | "end" | "duration";
 

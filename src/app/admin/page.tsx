@@ -30,6 +30,9 @@ export default async function AdminPage() {
       <Link href="/admin/post-types" className="text-sm text-accent hover:underline">
         Manage post types
       </Link>
+      <Link href="/admin/ai-settings" className="text-sm text-accent hover:underline">
+        Manage AI settings
+      </Link>
     </main>
   );
 }

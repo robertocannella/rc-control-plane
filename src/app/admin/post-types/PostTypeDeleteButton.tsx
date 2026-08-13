@@ -1,30 +1,33 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/toast-provider";
+import { useActionState } from "react";
 import { deletePostTypeAction, type PostTypeFormState } from "./actions";
 
 const initialState: PostTypeFormState = { status: "idle" };
 
-export function PostTypeDeleteButton({ slug }: { slug: string }) {
+// On success, deletePostTypeAction redirects server-side rather than
+// returning — so there's no "success" state to react to here, only the
+// error path stays client-visible.
+export function PostTypeDeleteButton({
+  slug,
+  postCount,
+}: {
+  slug: string;
+  postCount: number;
+}) {
   const action = deletePostTypeAction.bind(null, slug);
   const [state, formAction] = useActionState(action, initialState);
-  const showToast = useToast();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (state.status === "success") {
-      showToast("Post type deleted");
-      router.push("/admin/post-types");
-    }
-  }, [state, showToast, router]);
+  const warning =
+    postCount > 0
+      ? `Delete this post type and all ${postCount} post${postCount === 1 ? "" : "s"} under it? This can't be undone.`
+      : "Delete this post type? This can't be undone.";
 
   return (
     <form
       action={formAction}
       onSubmit={(e) => {
-        if (!confirm("Delete this post type? This can't be undone.")) {
+        if (!confirm(warning)) {
           e.preventDefault();
         }
       }}

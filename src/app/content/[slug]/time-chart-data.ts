@@ -3,7 +3,7 @@ import { getPostType, type FieldDef, type PostType } from "@/lib/post-types";
 import { getPost, type Post } from "@/lib/posts";
 import { canViewPostType } from "@/lib/content-access";
 import { getPostTitle } from "./PostFieldDisplay";
-import { computeDurationMinutes } from "./duration";
+import { computeDurationMinutes } from "@/lib/duration";
 
 // One entry per post with tracked time — pre-resolved and permission-
 // checked server-side, but deliberately left unaggregated so the client can

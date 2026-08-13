@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/toast-provider";
+import { useActionState } from "react";
 import { deletePostAction, type PostFormState } from "./actions";
 
 const initialState: PostFormState = { status: "idle" };
 
+// On success, deletePostAction redirects server-side rather than
+// returning — so there's no "success" state to react to here, only the
+// error path (Forbidden, etc.) stays client-visible.
 export function PostDeleteButton({
   slug,
   postId,
@@ -16,15 +17,6 @@ export function PostDeleteButton({
 }) {
   const action = deletePostAction.bind(null, slug, postId);
   const [state, formAction] = useActionState(action, initialState);
-  const showToast = useToast();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.status === "success") {
-      showToast("Deleted");
-      router.push(`/content/${slug}`);
-    }
-  }, [state, showToast, router, slug]);
 
   return (
     <form

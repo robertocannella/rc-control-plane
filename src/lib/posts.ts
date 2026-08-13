@@ -1,6 +1,7 @@
 import { firestore } from "@/lib/firestore";
-import { getPostType, type FieldDef } from "@/lib/post-types";
+import { getPostType, type FieldDef, type PostType } from "@/lib/post-types";
 import { coerceFieldValue, isEmptyFieldValue } from "@/lib/field-types";
+import { computeDurationMinutes } from "@/lib/duration";
 
 export interface Post {
   id: string;
@@ -78,6 +79,88 @@ function buildValuesFromFormData(
   return { values, missingRequired };
 }
 
+function timeToMinutes(value: string): number | null {
+  const [hours, minutes] = value.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function formatClockDisplay(value: string): string {
+  const parsed = timeToMinutes(value);
+  if (parsed === null) return value;
+  const hours = Math.floor(parsed / 60);
+  const minutes = parsed % 60;
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${hour12}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+// Same "first two time fields + a date field" convention as the chart,
+// the timer widget, and the list page's optional columns — not tied to
+// specific field keys/labels, so any time-tracker-shaped post type gets
+// this for free.
+//
+// A same-day, real-world calendar can only have one thing happening at a
+// time, so two entries whose [start, start+duration) intervals intersect
+// on the same date value are rejected — checked in raw minute-of-day
+// terms (duration already normalizes a crossed-midnight entry to up to
+// 24h), which is a deliberate simplification consistent with the rest of
+// this app: a "date" field names a single calendar day, not a real
+// start/end timestamp pair.
+async function findOverlappingPost(
+  slug: string,
+  postType: PostType,
+  values: Record<string, unknown>,
+  excludePostId: string | undefined,
+): Promise<Post | null> {
+  const timeFields = postType.fields.filter((field) => field.type === "time");
+  const [startField, endField] = timeFields;
+  const dateField = postType.fields.find((field) => field.type === "date");
+  if (!startField || !endField || !dateField) return null;
+
+  const dateValue = values[dateField.key];
+  const startValue = values[startField.key];
+  const endValue = values[endField.key];
+  if (typeof dateValue !== "string" || !dateValue) return null;
+  if (typeof startValue !== "string" || typeof endValue !== "string") return null;
+
+  const duration = computeDurationMinutes(startValue, endValue);
+  const start = timeToMinutes(startValue);
+  if (duration <= 0 || start === null) return null;
+  const end = start + duration;
+
+  const posts = await listPosts(slug);
+  for (const post of posts) {
+    if (post.id === excludePostId) continue;
+    if (post.values[dateField.key] !== dateValue) continue;
+
+    const otherStartValue = post.values[startField.key];
+    const otherEndValue = post.values[endField.key];
+    if (typeof otherStartValue !== "string" || typeof otherEndValue !== "string") {
+      continue;
+    }
+    const otherDuration = computeDurationMinutes(otherStartValue, otherEndValue);
+    const otherStart = timeToMinutes(otherStartValue);
+    if (otherDuration <= 0 || otherStart === null) continue;
+    const otherEnd = otherStart + otherDuration;
+
+    if (start < otherEnd && otherStart < end) {
+      return post;
+    }
+  }
+  return null;
+}
+
+function overlapMessage(startField: FieldDef, endField: FieldDef, conflict: Post): string {
+  const start = conflict.values[startField.key];
+  const end = conflict.values[endField.key];
+  const range =
+    typeof start === "string" && typeof end === "string"
+      ? ` (${formatClockDisplay(start)}–${formatClockDisplay(end)})`
+      : "";
+  return `This overlaps with another entry${range}. Adjust the time or the other entry first.`;
+}
+
 export async function createPost(
   slug: string,
   formData: FormData,
@@ -95,6 +178,12 @@ export async function createPost(
       ok: false,
       reason: `Missing required field(s): ${missingRequired.join(", ")}`,
     };
+  }
+
+  const [startField, endField] = postType.fields.filter((f) => f.type === "time");
+  const conflict = await findOverlappingPost(slug, postType, values, undefined);
+  if (conflict && startField && endField) {
+    return { ok: false, reason: overlapMessage(startField, endField, conflict) };
   }
 
   const now = new Date();
@@ -166,6 +255,12 @@ export async function updatePost(
       ok: false,
       reason: `Missing required field(s): ${missingRequired.join(", ")}`,
     };
+  }
+
+  const [startField, endField] = postType.fields.filter((f) => f.type === "time");
+  const conflict = await findOverlappingPost(slug, postType, values, id);
+  if (conflict && startField && endField) {
+    return { ok: false, reason: overlapMessage(startField, endField, conflict) };
   }
 
   await postsCollection(slug)
