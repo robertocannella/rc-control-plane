@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
+import { InstallPrompt } from "@/components/install-prompt";
 import type { Session } from "next-auth";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { auth, signIn, signOut } from "@/auth";
@@ -25,6 +26,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Roberto Cannella",
   description: "Sign in with Google",
+  appleWebApp: {
+    capable: true,
+    title: "Control Plane",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#16324F",
 };
 
 const NAV_ICON_CLASS = "h-5 w-5 shrink-0";
@@ -115,6 +125,7 @@ export default async function RootLayout({
           >
             {children}
           </AppShell>
+          <InstallPrompt />
         </ToastProvider>
       </body>
     </html>
