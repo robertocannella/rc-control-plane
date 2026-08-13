@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/post-types";
 import type { Post } from "@/lib/posts";
 import { useToast } from "@/components/toast-provider";
-import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   createPostAction,
   updatePostAction,
   startPostAction,
-  uploadImageAction,
   type PostFormState,
 } from "./actions";
+import { renderInput } from "./field-inputs";
+import type { RelationFieldData } from "./relation-options";
 
 const initialState: PostFormState = { status: "idle" };
 
@@ -25,7 +25,7 @@ export function PostForm({
   slug: string;
   fields: FieldDef[];
   post?: Post;
-  relationOptions?: Record<string, { id: string; label: string }[]>;
+  relationOptions?: Record<string, RelationFieldData>;
 }) {
   const action = post
     ? updatePostAction.bind(null, slug, post.id)
@@ -102,6 +102,7 @@ export function PostForm({
               effectiveField,
               post?.values[field.key],
               relationOptions?.[field.key],
+              true,
             )}
           </div>
         );
@@ -117,149 +118,6 @@ export function PostForm({
       </button>
     </form>
   );
-}
-
-function renderInput(
-  slug: string,
-  field: FieldDef,
-  value: unknown,
-  relationOptions?: { id: string; label: string }[],
-) {
-  const common = "rounded-md border px-3 py-1.5 text-sm";
-
-  switch (field.type) {
-    case "longtext":
-      return (
-        <textarea
-          id={field.key}
-          name={field.key}
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          rows={4}
-          className={common}
-        />
-      );
-    case "richtext":
-      return (
-        <RichTextEditor
-          name={field.key}
-          initialValue={typeof value === "string" ? value : ""}
-        />
-      );
-    case "number":
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="number"
-          defaultValue={typeof value === "number" ? value : undefined}
-          required={field.required}
-          className={common}
-        />
-      );
-    case "date":
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="date"
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        />
-      );
-    case "time":
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="time"
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        />
-      );
-    case "boolean":
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="checkbox"
-          defaultChecked={value === true}
-          className="h-4 w-4"
-        />
-      );
-    case "select":
-      return (
-        <select
-          id={field.key}
-          name={field.key}
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        >
-          <option value="" disabled>
-            Choose...
-          </option>
-          {(field.options ?? []).map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    case "relation":
-      return (
-        <select
-          id={field.key}
-          name={field.key}
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        >
-          <option value="" disabled>
-            Choose...
-          </option>
-          {(relationOptions ?? []).map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      );
-    case "image":
-      return (
-        <ImageFieldInput
-          slug={slug}
-          fieldKey={field.key}
-          value={typeof value === "string" ? value : ""}
-        />
-      );
-    case "link":
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="url"
-          placeholder="https://..."
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        />
-      );
-    case "text":
-    default:
-      return (
-        <input
-          id={field.key}
-          name={field.key}
-          type="text"
-          defaultValue={typeof value === "string" ? value : ""}
-          required={field.required}
-          className={common}
-        />
-      );
-  }
 }
 
 function formatClockValue(date: Date): string {
@@ -405,86 +263,3 @@ function EntryTimer({
   );
 }
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // matches src/lib/storage.ts
-
-// Uploads immediately on file selection (a direct async call to the server
-// action, not a form submission), independent of the surrounding post
-// form — the resulting URL is carried into that form's own submission via
-// a plain hidden input, so every other field type still just sees a string.
-function ImageFieldInput({
-  slug,
-  fieldKey,
-  value,
-}: {
-  slug: string;
-  fieldKey: string;
-  value: string;
-}) {
-  const [url, setUrl] = useState(value);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Unsupported file type.");
-      return;
-    }
-    if (file.size > MAX_UPLOAD_BYTES) {
-      setError("File is too large (max 8MB).");
-      return;
-    }
-
-    setError(null);
-    setUploading(true);
-
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await uploadImageAction(slug, formData);
-
-    setUploading(false);
-    if (!result.ok || !result.url) {
-      setError(result.reason ?? "Upload failed.");
-      return;
-    }
-    setUrl(result.url);
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {url && (
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt=""
-            className="h-24 w-24 rounded-md border object-cover"
-          />
-          <button
-            type="button"
-            onClick={() => setUrl("")}
-            className="text-sm text-red-600 underline"
-          >
-            Remove
-          </button>
-        </div>
-      )}
-
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        disabled={uploading}
-        className="rounded-md border px-3 py-1.5 text-sm"
-      />
-
-      {uploading && <p className="text-sm text-gray-500">Uploading…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <input type="hidden" name={fieldKey} value={url} />
-    </div>
-  );
-}
