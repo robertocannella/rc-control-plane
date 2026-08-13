@@ -114,6 +114,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Native checkboxes/radios/range inputs otherwise tint with the browser's
+   default blue regardless of theme — this is the one CSS property that
+   controls that without reimplementing the control from scratch. */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
 /* Tailwind's preflight resets list/paragraph/heading styling, which also
    strips it from rich-text HTML rendered via dangerouslySetInnerHTML.
    Restore just enough for what the editor's toolbar can produce. */

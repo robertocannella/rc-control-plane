@@ -3,30 +3,35 @@ import { getPostType, type FieldDef, type PostType } from "@/lib/post-types";
 import { getPost, type Post } from "@/lib/posts";
 import { canViewPostType } from "@/lib/content-access";
 import { getPostTitle } from "./PostFieldDisplay";
+import { computeDurationMinutes } from "./duration";
 
-export interface TimeChartSlice {
-  label: string;
+// One entry per post with tracked time — pre-resolved and permission-
+// checked server-side, but deliberately left unaggregated so the client can
+// re-group by any selected date range (range filtering has to happen in the
+// browser, not the server — see date-range.ts) without another round trip
+// or re-exposing anything not already permitted.
+export interface TimeChartFact {
+  dateValue: string | null;
   minutes: number;
-  colorSlot: 0 | 1 | 2 | -1; // -1 == "Other"
+  // Only present for a dimension the viewer is actually allowed to see
+  // (see TimeChartDimensionMeta.viewable) and only when this post has a
+  // resolvable value for it — never populated for a non-viewable dimension.
+  groups: Partial<Record<string, string>>;
 }
 
-export interface TimeChartDimension {
+export interface TimeChartDimensionMeta {
   fieldKey: string;
   label: string;
-  // null when the viewer can't see this dimension's related post type —
-  // the client falls back to a total-only display for it rather than
-  // omitting the toggle option entirely, so switching between dimensions
-  // stays consistent regardless of which one happens to be viewable.
-  slices: TimeChartSlice[] | null;
+  viewable: boolean;
 }
 
 export type TimeChartResult =
   | { kind: "not-applicable" }
-  | { kind: "empty" }
-  | { kind: "total-only"; totalMinutes: number }
-  | { kind: "chart"; totalMinutes: number; dimensions: TimeChartDimension[] };
-
-const MAX_NAMED_SLICES = 3;
+  | {
+      kind: "ready";
+      dimensions: TimeChartDimensionMeta[];
+      facts: TimeChartFact[];
+    };
 
 // "Client" is deliberately never offered as a chart-groupable dimension —
 // unlike Project/Technology, it's the field a prior privacy fix specifically
@@ -39,74 +44,31 @@ const EXCLUDED_RELATION_SLUGS = new Set(["client"]);
 // else keeps its schema order.
 const PREFERRED_FIRST_SLUG = "technology";
 
-function computeDurationMinutes(start: unknown, end: unknown): number {
-  if (typeof start !== "string" || typeof end !== "string") return 0;
-  const [startHours, startMinutes] = start.split(":").map(Number);
-  const [endHours, endMinutes] = end.split(":").map(Number);
-  if (
-    [startHours, startMinutes, endHours, endMinutes].some((n) =>
-      Number.isNaN(n),
-    )
-  ) {
-    return 0;
-  }
-  let minutes =
-    endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
-  if (minutes < 0) minutes += 24 * 60; // crossed midnight
-  return minutes;
-}
-
-async function buildDimensionSlices(
+async function resolveGroupLabels(
   field: FieldDef,
-  durations: { post: Post; minutes: number }[],
-  session: Session | null,
-): Promise<TimeChartSlice[] | null> {
+  posts: Post[],
+): Promise<Map<string, string> | null> {
   const relatedSlug = field.relatedPostType;
-  const relatedPostType = relatedSlug ? await getPostType(relatedSlug) : null;
+  if (!relatedSlug) return null;
+  const relatedPostType = await getPostType(relatedSlug);
+  if (!relatedPostType) return null;
 
-  // Only reveal names to a viewer who could actually view the related post
-  // type themselves — not hardcoded to "guest", so this stays correct for
-  // a signed-in viewer without access too.
-  if (!relatedSlug || !relatedPostType || !canViewPostType(relatedPostType, session)) {
-    return null;
+  const ids = new Set<string>();
+  for (const post of posts) {
+    const value = post.values[field.key];
+    if (typeof value === "string" && value) ids.add(value);
   }
 
-  const minutesByRelatedId = new Map<string, number>();
-  for (const { post, minutes } of durations) {
-    const relatedId = post.values[field.key];
-    if (typeof relatedId !== "string" || !relatedId) continue;
-    minutesByRelatedId.set(
-      relatedId,
-      (minutesByRelatedId.get(relatedId) ?? 0) + minutes,
-    );
-  }
-
-  const named = await Promise.all(
-    Array.from(minutesByRelatedId.entries()).map(async ([id, minutes]) => {
+  const entries = await Promise.all(
+    Array.from(ids).map(async (id): Promise<[string, string]> => {
       const relatedPost = await getPost(relatedSlug, id);
       const label = relatedPost
         ? getPostTitle(relatedPostType, relatedPost)
         : "Unknown";
-      return { label, minutes };
+      return [id, label];
     }),
   );
-  named.sort((a, b) => b.minutes - a.minutes);
-
-  const top = named
-    .slice(0, MAX_NAMED_SLICES)
-    .map((entry, index): TimeChartSlice => ({
-      ...entry,
-      colorSlot: index as 0 | 1 | 2,
-    }));
-  const overflowMinutes = named
-    .slice(MAX_NAMED_SLICES)
-    .reduce((sum, entry) => sum + entry.minutes, 0);
-
-  const slices = [...top];
-  if (overflowMinutes > 0) {
-    slices.push({ label: "Other", minutes: overflowMinutes, colorSlot: -1 });
-  }
-  return slices;
+  return new Map(entries);
 }
 
 export async function buildTimeChartData(
@@ -124,20 +86,15 @@ export async function buildTimeChartData(
     return { kind: "not-applicable" };
   }
 
-  const durations = posts
-    .map((post) => ({
-      post,
-      minutes: computeDurationMinutes(
+  const dateField = postType.fields.find((field) => field.type === "date");
+
+  const trackedPosts = posts.filter(
+    (post) =>
+      computeDurationMinutes(
         post.values[startField.key],
         post.values[endField.key],
-      ),
-    }))
-    .filter((d) => d.minutes > 0);
-
-  const totalMinutes = durations.reduce((sum, d) => sum + d.minutes, 0);
-  if (totalMinutes === 0) {
-    return { kind: "empty" };
-  }
+      ) > 0,
+  );
 
   const relationFields = postType.fields.filter(
     (field): field is FieldDef & { relatedPostType: string } =>
@@ -151,17 +108,42 @@ export async function buildTimeChartData(
     return 0;
   });
 
-  if (relationFields.length === 0) {
-    return { kind: "total-only", totalMinutes };
+  const dimensions: TimeChartDimensionMeta[] = [];
+  const labelsByField = new Map<string, Map<string, string> | null>();
+
+  for (const field of relationFields) {
+    const relatedPostType = field.relatedPostType
+      ? await getPostType(field.relatedPostType)
+      : null;
+    const viewable = !!relatedPostType && canViewPostType(relatedPostType, session);
+    dimensions.push({ fieldKey: field.key, label: field.label, viewable });
+    labelsByField.set(
+      field.key,
+      viewable ? await resolveGroupLabels(field, trackedPosts) : null,
+    );
   }
 
-  const dimensions = await Promise.all(
-    relationFields.map(async (field) => ({
-      fieldKey: field.key,
-      label: field.label,
-      slices: await buildDimensionSlices(field, durations, session),
-    })),
-  );
+  const facts: TimeChartFact[] = trackedPosts.map((post) => {
+    const groups: Partial<Record<string, string>> = {};
+    for (const field of relationFields) {
+      const labels = labelsByField.get(field.key);
+      if (!labels) continue;
+      const value = post.values[field.key];
+      if (typeof value === "string" && labels.has(value)) {
+        groups[field.key] = labels.get(value);
+      }
+    }
 
-  return { kind: "chart", totalMinutes, dimensions };
+    const dateValue = dateField ? post.values[dateField.key] : undefined;
+    return {
+      dateValue: typeof dateValue === "string" ? dateValue : null,
+      minutes: computeDurationMinutes(
+        post.values[startField.key],
+        post.values[endField.key],
+      ),
+      groups,
+    };
+  });
+
+  return { kind: "ready", dimensions, facts };
 }
