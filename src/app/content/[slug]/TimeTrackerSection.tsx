@@ -52,14 +52,16 @@ export function TimeTrackerSection({
   return (
     <>
       {hasDateRange && (
-        <div className="flex flex-wrap gap-2">
+        // Horizontally scrollable rather than wrapping — see the same
+        // fix on weight-history-chart.tsx for the reasoning.
+        <div className="flex gap-2 overflow-x-auto">
           {RANGE_OPTIONS.map((range) => (
             <button
               key={range.label}
               type="button"
               onClick={() => setSelectedDays(range.days)}
               className={[
-                "rounded-lg border px-3 py-1.5 text-sm",
+                "shrink-0 rounded-lg border px-3 py-1.5 text-sm whitespace-nowrap",
                 selectedDays === range.days
                   ? "border-accent bg-accent text-accent-foreground"
                   : "border-border bg-surface",

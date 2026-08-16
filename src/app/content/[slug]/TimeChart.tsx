@@ -216,14 +216,19 @@ export function TimeChart({
   return (
     <div className="flex flex-col items-center gap-4">
       {dimensions.length > 1 && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        // Horizontally scrollable rather than wrapping — same fix as
+        // the date-range pill rows (weight-history-chart.tsx,
+        // TimeTrackerSection.tsx); justify-center is dropped since it
+        // doesn't play well with overflow scrolling once content is
+        // wider than the container.
+        <div className="flex w-full items-center gap-2 overflow-x-auto">
           {dimensions.map((dimension) => (
             <button
               key={dimension.fieldKey}
               type="button"
               onClick={() => setActiveFieldKey(dimension.fieldKey)}
               className={[
-                "rounded-lg border px-3 py-1.5 text-sm",
+                "shrink-0 rounded-lg border px-3 py-1.5 text-sm whitespace-nowrap",
                 dimension.fieldKey === active?.fieldKey
                   ? "border-accent bg-accent text-accent-foreground"
                   : "border-border bg-surface",
