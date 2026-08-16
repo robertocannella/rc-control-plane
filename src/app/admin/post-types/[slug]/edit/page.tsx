@@ -4,6 +4,7 @@ import { getPostType, listPostTypes } from "@/lib/post-types";
 import { listPosts } from "@/lib/posts";
 import { PostTypeForm } from "../../PostTypeForm";
 import { PostTypeDeleteButton } from "../../PostTypeDeleteButton";
+import { buildIconPickerOptions } from "../../icon-options";
 
 export default async function EditPostTypePage({
   params,
@@ -35,11 +36,17 @@ export default async function EditPostTypePage({
 
   const postTypes = await listPostTypes();
   const posts = await listPosts(slug);
+  const iconOptions = await buildIconPickerOptions(postType.icon);
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <h1 className="text-2xl font-semibold">Edit {postType.label}</h1>
-      <PostTypeForm mode="edit" postType={postType} postTypes={postTypes} />
+      <PostTypeForm
+        mode="edit"
+        postType={postType}
+        postTypes={postTypes}
+        iconOptions={iconOptions}
+      />
       <PostTypeDeleteButton slug={postType.slug} postCount={posts.length} />
     </main>
   );

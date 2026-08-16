@@ -3,8 +3,17 @@ import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
 import { listPosts } from "@/lib/posts";
 import { canViewPostType, canEditPostType } from "@/lib/content-access";
+import { resolveLucideIcon } from "@/lib/post-type-icons";
 import { buildTimeChartData } from "./time-chart-data";
 import { TimeTrackerSection } from "./TimeTrackerSection";
+
+// The "icons" content type is the one place a post's own field value
+// (its `name`) is itself meant to be rendered as an icon — special-cased
+// by slug the same way time-chart-data.ts already special-cases
+// EXCLUDED_RELATION_SLUGS/PREFERRED_FIRST_SLUG, since there's no
+// field-shape convention generic enough to infer "this text field is a
+// Lucide icon name" from schema alone.
+const ICONS_SLUG = "icons";
 
 export default async function PostTypeContentListPage({
   params,
@@ -36,6 +45,18 @@ export default async function PostTypeContentListPage({
   const timeFields = postType.fields.filter((field) => field.type === "time");
   const [startField, endField] = timeFields;
 
+  const iconPreviews =
+    slug === ICONS_SLUG
+      ? Object.fromEntries(
+          await Promise.all(
+            posts.map(async (post) => {
+              const Icon = await resolveLucideIcon(post.values.name);
+              return [post.id, <Icon key={post.id} className="h-4 w-4 shrink-0" />] as const;
+            }),
+          ),
+        )
+      : undefined;
+
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <h1 className="text-2xl font-semibold">{postType.label}</h1>
@@ -48,6 +69,7 @@ export default async function PostTypeContentListPage({
         startFieldKey={startField?.key}
         endFieldKey={endField?.key}
         chartResult={chartResult}
+        iconPreviews={iconPreviews}
       />
     </main>
   );

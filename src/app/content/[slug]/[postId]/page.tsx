@@ -5,9 +5,10 @@ import type { Session } from "next-auth";
 import { getPostType, type FieldDef } from "@/lib/post-types";
 import { getPost } from "@/lib/posts";
 import { canViewPostType, canEditPostType } from "@/lib/content-access";
+import { getPostTitle } from "@/lib/post-title";
+import { findRelatedPosts } from "@/lib/related-posts";
 import {
   PostFieldDisplay,
-  getPostTitle,
   type ResolvedRelationDisplay,
 } from "../PostFieldDisplay";
 import { PostDeleteButton } from "../PostDeleteButton";
@@ -74,6 +75,7 @@ export default async function PostDetailPage({
     post.values,
     session,
   );
+  const relatedGroups = await findRelatedPosts(slug, post.id, session);
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
@@ -105,6 +107,43 @@ export default async function PostDetailPage({
           </div>
         ))}
       </div>
+
+      {relatedGroups.length > 0 && (
+        <div className="flex w-full max-w-2xl flex-col gap-4">
+          <h2 className="text-lg font-semibold">Related</h2>
+          {relatedGroups.map((group, index) => {
+            // Only disambiguate with the field label when this source post
+            // type shows up more than once (e.g. two different relation
+            // fields on it both pointing here) — the common case of one
+            // field per source type reads better without it.
+            const isAmbiguous =
+              relatedGroups.filter((g) => g.sourceSlug === group.sourceSlug).length > 1;
+            return (
+              <div
+                key={`${group.sourceSlug}-${group.fieldLabel}-${index}`}
+                className="flex flex-col gap-2 rounded-md border border-border px-4 py-3"
+              >
+                <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
+                  {group.sourceLabel}
+                  {isAmbiguous ? ` — ${group.fieldLabel}` : ""} ({group.posts.length})
+                </span>
+                <ul className="flex flex-col gap-1">
+                  {group.posts.map((related) => (
+                    <li key={related.id}>
+                      <Link
+                        href={`/content/${group.sourceSlug}/${related.id}`}
+                        className="underline"
+                      >
+                        {related.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { PostType } from "@/lib/post-types";
 import type { Post } from "@/lib/posts";
@@ -21,6 +21,7 @@ export function TimeTrackerSection({
   startFieldKey,
   endFieldKey,
   chartResult,
+  iconPreviews,
 }: {
   slug: string;
   postType: PostType;
@@ -30,6 +31,7 @@ export function TimeTrackerSection({
   startFieldKey?: string;
   endFieldKey?: string;
   chartResult: TimeChartResult;
+  iconPreviews?: Record<string, ReactNode>;
 }) {
   const hasDateRange = !!dateFieldKey;
   const [selectedDays, setSelectedDays] = useState<RangeDays>(hasDateRange ? 1 : null);
@@ -54,7 +56,7 @@ export function TimeTrackerSection({
       {hasDateRange && (
         // Horizontally scrollable rather than wrapping — see the same
         // fix on weight-history-chart.tsx for the reasoning.
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto">
           {RANGE_OPTIONS.map((range) => (
             <button
               key={range.label}
@@ -95,6 +97,7 @@ export function TimeTrackerSection({
         dateFieldKey={dateFieldKey}
         startFieldKey={startFieldKey}
         endFieldKey={endFieldKey}
+        iconPreviews={iconPreviews}
       />
     </>
   );

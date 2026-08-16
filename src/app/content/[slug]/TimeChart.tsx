@@ -221,7 +221,7 @@ export function TimeChart({
         // TimeTrackerSection.tsx); justify-center is dropped since it
         // doesn't play well with overflow scrolling once content is
         // wider than the container.
-        <div className="flex w-full items-center gap-2 overflow-x-auto">
+        <div className="scrollbar-hide flex w-full items-center gap-2 overflow-x-auto">
           {dimensions.map((dimension) => (
             <button
               key={dimension.fieldKey}

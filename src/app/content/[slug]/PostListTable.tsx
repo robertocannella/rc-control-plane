@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { PostType } from "@/lib/post-types";
 import type { Post } from "@/lib/posts";
-import { getPostTitle } from "./PostFieldDisplay";
+import { getPostTitle } from "@/lib/post-title";
 import { computeDurationMinutes, formatDurationMinutes } from "@/lib/duration";
 
 type OptionalColumn = "start" | "end" | "duration";
@@ -54,6 +54,7 @@ export function PostListTable({
   dateFieldKey,
   startFieldKey,
   endFieldKey,
+  iconPreviews,
 }: {
   slug: string;
   postType: PostType;
@@ -63,6 +64,11 @@ export function PostListTable({
   dateFieldKey?: string;
   startFieldKey?: string;
   endFieldKey?: string;
+  // Pre-rendered per-post icon elements (currently only the "icons"
+  // content type provides these — see [slug]/page.tsx) — a component
+  // reference isn't serializable across the server/client boundary, so
+  // this arrives already resolved into JSX, same pattern as NavItem.icon.
+  iconPreviews?: Record<string, ReactNode>;
 }) {
   const hasTimeColumns = !!startFieldKey && !!endFieldKey;
   const [visibleColumns, setVisibleColumns] = useState<Set<OptionalColumn>>(
@@ -144,8 +150,9 @@ export function PostListTable({
                     <td className="px-4 py-3">
                       <Link
                         href={`/content/${slug}/${post.id}`}
-                        className="font-medium hover:underline"
+                        className="flex items-center gap-2 font-medium hover:underline"
                       >
+                        {iconPreviews?.[post.id]}
                         {getPostTitle(postType, post)}
                       </Link>
                     </td>

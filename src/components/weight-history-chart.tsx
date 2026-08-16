@@ -145,7 +145,7 @@ export function WeightHistoryChart({ data, goal }: WeightHistoryChartProps) {
           down awkwardly; a swipeable row keeps the chart pinned right
           below the range controls. shrink-0 stops buttons from being
           squeezed as flex children of a scroll container. */}
-      <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="scrollbar-hide flex items-center gap-2 overflow-x-auto">
         {ranges.map((option) => (
           <button
             key={option.label}
