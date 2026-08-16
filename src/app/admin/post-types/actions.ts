@@ -11,11 +11,7 @@ import {
   isValidSlug,
   type PostTypeVisibility,
 } from "@/lib/post-types";
-import {
-  isPostTypeIconName,
-  DEFAULT_POST_TYPE_ICON,
-  type PostTypeIconName,
-} from "@/lib/post-type-icons";
+import { isValidLucideIconName, DEFAULT_ICON_NAME } from "@/lib/lucide-icon-names";
 
 export interface PostTypeFormState {
   status: "idle" | "success" | "error";
@@ -37,8 +33,8 @@ function parseVisibility(raw: FormDataEntryValue | null): PostTypeVisibility {
     : "editor";
 }
 
-function parseIcon(raw: FormDataEntryValue | null): PostTypeIconName {
-  return isPostTypeIconName(raw) ? raw : DEFAULT_POST_TYPE_ICON;
+function parseIcon(raw: FormDataEntryValue | null): string {
+  return isValidLucideIconName(raw) ? raw : DEFAULT_ICON_NAME;
 }
 
 export async function createPostTypeAction(

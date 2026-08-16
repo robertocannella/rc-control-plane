@@ -1,6 +1,6 @@
 import { getPostType, type FieldDef, type PostType } from "@/lib/post-types";
 import { listPosts } from "@/lib/posts";
-import { getPostTitle } from "./PostFieldDisplay";
+import { getPostTitle } from "@/lib/post-title";
 
 export interface RelationOption {
   id: string;

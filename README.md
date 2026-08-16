@@ -103,3 +103,11 @@ reference:
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Auth.js Documentation](https://authjs.dev)
+
+
+## TODOs
+- Allow users to create their own set of data in weight tracker and timesheets
+- Allow column sorting in Content list view
+- Allow content searching/filtering in Content List view 
+- Create bubble chart on the dahsboard of recent activity.
+- add spinner to routes.  sometimes it takes a while for the website to load for some reason

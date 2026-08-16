@@ -1,10 +1,6 @@
 import { firestore } from "@/lib/firestore";
 import { isFieldType, type FieldType } from "@/lib/field-types";
-import {
-  isPostTypeIconName,
-  DEFAULT_POST_TYPE_ICON,
-  type PostTypeIconName,
-} from "@/lib/post-type-icons";
+import { isValidLucideIconName, DEFAULT_ICON_NAME } from "@/lib/lucide-icon-names";
 
 export interface FieldDef {
   key: string;
@@ -28,7 +24,7 @@ export interface PostType {
   slug: string;
   label: string;
   visibility: PostTypeVisibility;
-  icon: PostTypeIconName;
+  icon: string; // a Lucide icon name — see src/lib/lucide-icon-names.ts
   fields: FieldDef[];
   createdAt: Date;
   updatedAt: Date;
@@ -110,8 +106,8 @@ function sanitizeVisibility(v: unknown): PostTypeVisibility {
   return "editor"; // fail closed for anything unrecognized
 }
 
-function sanitizeIcon(icon: unknown): PostTypeIconName {
-  return isPostTypeIconName(icon) ? icon : DEFAULT_POST_TYPE_ICON;
+function sanitizeIcon(icon: unknown): string {
+  return isValidLucideIconName(icon) ? icon : DEFAULT_ICON_NAME;
 }
 
 function toPostType(slug: string, data: PostTypeRecord): PostType {
@@ -146,7 +142,7 @@ export async function createPostType(params: {
   slug: string;
   label: string;
   visibility: PostTypeVisibility;
-  icon: PostTypeIconName;
+  icon: string;
   fields: FieldDef[];
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!isValidSlug(params.slug)) {
@@ -180,7 +176,7 @@ export async function updatePostType(
   params: {
     label: string;
     visibility: PostTypeVisibility;
-    icon: PostTypeIconName;
+    icon: string;
     fields: FieldDef[];
   },
 ): Promise<void> {

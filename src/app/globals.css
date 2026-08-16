@@ -145,3 +145,18 @@ input[type="range"] {
 .richtext-content :where(a) {
   text-decoration: underline;
 }
+
+/* Swipeable pill rows (date-range/dimension selectors) are still
+   scrollable with this — it only hides the scrollbar chrome itself, on
+   the theory that a row of touch-draggable buttons reads as a control,
+   not a document viewport, so a visible scrollbar underneath it is
+   just noise. Not applied to the data-table overflow-x-auto wrappers
+   elsewhere, which are real scrollable content and benefit from the
+   native scrollbar as a length/position cue. */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/WebKit */
+}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/storage";
 import { loadAiSettings } from "@/lib/ai-settings";
 import { callAi } from "@/lib/ai-provider";
-import { getPostTitle } from "./PostFieldDisplay";
+import { getPostTitle } from "@/lib/post-title";
 
 export interface PostFormState {
   status: "idle" | "success" | "error";

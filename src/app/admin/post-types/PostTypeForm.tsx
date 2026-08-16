@@ -2,15 +2,11 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { FIELD_TYPES, type FieldType } from "@/lib/field-types";
 import type { PostType, PostTypeVisibility } from "@/lib/post-types";
-import {
-  POST_TYPE_ICONS,
-  POST_TYPE_ICON_NAMES,
-  DEFAULT_POST_TYPE_ICON,
-  type PostTypeIconName,
-} from "@/lib/post-type-icons";
 import { useToast } from "@/components/toast-provider";
+import type { IconPickerOption } from "./icon-options";
 import {
   createPostTypeAction,
   updatePostTypeAction,
@@ -55,6 +51,7 @@ type PostTypeFormProps = (
   | { mode: "edit"; postType: PostType }
 ) & {
   postTypes: { slug: string; label: string }[];
+  iconOptions: IconPickerOption[];
 };
 
 export function PostTypeForm(props: PostTypeFormProps) {
@@ -73,8 +70,8 @@ export function PostTypeForm(props: PostTypeFormProps) {
   const [visibility, setVisibility] = useState<PostTypeVisibility>(
     postType?.visibility ?? "account",
   );
-  const [icon, setIcon] = useState<PostTypeIconName>(
-    postType?.icon ?? DEFAULT_POST_TYPE_ICON,
+  const [icon, setIcon] = useState<string>(
+    postType?.icon ?? props.iconOptions[0]?.name ?? "file-text",
   );
   const [fields, setFields] = useState<FieldRow[]>(() =>
     (postType?.fields ?? []).map((field) => ({
@@ -208,26 +205,51 @@ export function PostTypeForm(props: PostTypeFormProps) {
 
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium">Icon</span>
-        <div className="flex flex-wrap gap-2">
-          {POST_TYPE_ICON_NAMES.map((name) => {
-            const { label: iconLabel, Icon } = POST_TYPE_ICONS[name];
-            const selected = icon === name;
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setIcon(name)}
-                aria-pressed={selected}
-                title={iconLabel}
-                className={`flex h-10 w-10 items-center justify-center rounded-md border hover:bg-foreground/5 ${
-                  selected ? "border-accent" : "border-border"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-              </button>
-            );
-          })}
-        </div>
+        {props.iconOptions.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No icons yet — add one under{" "}
+            <Link href="/content/icons/new" className="text-accent hover:underline">
+              Content → Icons
+            </Link>
+            .
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {props.iconOptions.map((option) => {
+              const selected = icon === option.name;
+              return (
+                <button
+                  key={option.name}
+                  type="button"
+                  onClick={() => setIcon(option.name)}
+                  aria-pressed={selected}
+                  title={option.label}
+                  className={`flex h-10 w-10 items-center justify-center rounded-md border hover:bg-foreground/5 ${
+                    selected ? "border-accent" : "border-border"
+                  }`}
+                >
+                  {option.icon}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-gray-500">
+          Don&apos;t see the one you want? Browse the full set at{" "}
+          <a
+            href="https://lucide.dev/icons"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            lucide.dev/icons
+          </a>
+          , then add it under{" "}
+          <Link href="/content/icons/new" className="text-accent hover:underline">
+            Content → Icons
+          </Link>{" "}
+          using the exact name shown there (e.g. &ldquo;wrench&rdquo;).
+        </p>
         <input type="hidden" name="icon" value={icon} />
       </div>
 

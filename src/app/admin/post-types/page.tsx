@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { listPostTypes } from "@/lib/post-types";
-import { getPostTypeIcon } from "@/lib/post-type-icons";
+import { resolveLucideIcon } from "@/lib/post-type-icons";
 
 export default async function PostTypesPage() {
   const session = await auth();
@@ -23,6 +23,12 @@ export default async function PostTypesPage() {
   }
 
   const postTypes = await listPostTypes();
+  const postTypesWithIcons = await Promise.all(
+    postTypes.map(async (postType) => ({
+      ...postType,
+      Icon: await resolveLucideIcon(postType.icon),
+    })),
+  );
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
@@ -34,7 +40,7 @@ export default async function PostTypesPage() {
         + New post type
       </Link>
       <div className="w-full max-w-3xl overflow-x-auto rounded-md border border-border">
-        {postTypes.length === 0 ? (
+        {postTypesWithIcons.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">No post types yet.</p>
         ) : (
           <table className="w-full text-sm">
@@ -48,8 +54,7 @@ export default async function PostTypesPage() {
               </tr>
             </thead>
             <tbody>
-              {postTypes.map((postType) => {
-                const Icon = getPostTypeIcon(postType.icon);
+              {postTypesWithIcons.map(({ Icon, ...postType }) => {
                 return (
                   <tr
                     key={postType.slug}
