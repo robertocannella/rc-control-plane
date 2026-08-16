@@ -140,14 +140,19 @@ export function WeightHistoryChart({ data, goal }: WeightHistoryChartProps) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Horizontally scrollable rather than wrapping — on narrow
+          viewports a flex-wrap row of this many options pushes the chart
+          down awkwardly; a swipeable row keeps the chart pinned right
+          below the range controls. shrink-0 stops buttons from being
+          squeezed as flex children of a scroll container. */}
+      <div className="flex items-center gap-2 overflow-x-auto">
         {ranges.map((option) => (
           <button
             key={option.label}
             type="button"
             onClick={() => setRange({ kind: "preset", days: option.days })}
             className={[
-              "rounded-lg border px-3 py-2 text-sm",
+              "shrink-0 rounded-lg border px-3 py-2 text-sm whitespace-nowrap",
               range.kind === "preset" && range.days === option.days
                 ? "border-accent bg-accent text-accent-foreground"
                 : "border-border bg-surface",
@@ -161,16 +166,20 @@ export function WeightHistoryChart({ data, goal }: WeightHistoryChartProps) {
           <button
             type="button"
             onClick={() => setRange(DEFAULT_RANGE)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted-foreground"
+            className="shrink-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm whitespace-nowrap text-muted-foreground"
           >
             Reset zoom
           </button>
         )}
-
-        <span className="text-sm text-muted-foreground">
-          Drag on the chart to zoom into a range
-        </span>
       </div>
+
+      {/* Moved out of the scrollable row above — as a flex sibling of
+          the range buttons it used to just wrap onto its own line, but
+          inside a non-wrapping scroll row it would get dragged into the
+          horizontal scroll instead. */}
+      <span className="block text-sm text-muted-foreground">
+        Drag on the chart to zoom into a range
+      </span>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Metric
