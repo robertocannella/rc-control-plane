@@ -95,6 +95,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --animate-toast-in: toast-slide-down 300ms ease-out;
+  --animate-spin-reverse: spin-reverse 2.4s linear infinite;
 }
 
 @keyframes toast-slide-down {
@@ -105,6 +106,20 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* The large gear in <Spinner> (see components/spinner.tsx) turns this
+   direction while the small gear uses Tailwind's built-in animate-spin
+   (clockwise, 1s) — opposite directions and different speeds is what
+   actually reads as "meshing gears" rather than two icons spinning
+   independently. */
+@keyframes spin-reverse {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
   }
 }
 

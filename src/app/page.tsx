@@ -5,6 +5,8 @@ import { Shield } from "lucide-react";
 import { listPostTypes } from "@/lib/post-types";
 import { canViewPostType } from "@/lib/content-access";
 import { resolveLucideIcon } from "@/lib/post-type-icons";
+import { buildRecentActivityFacts } from "@/lib/recent-activity";
+import { RecentActivityChart } from "@/components/recent-activity-chart";
 
 export default async function Home() {
   const session = await auth();
@@ -60,6 +62,8 @@ export default async function Home() {
     );
   }
 
+  const activityFacts = await buildRecentActivityFacts(session);
+
   return (
     <main className="flex flex-1 flex-col items-center gap-6 px-6 py-12">
       <div className="flex flex-col items-center gap-4">
@@ -73,6 +77,11 @@ export default async function Home() {
           />
         )}
         <p className="text-lg">Signed in as {session.user.email}</p>
+      </div>
+
+      <div className="flex w-full max-w-2xl flex-col gap-2">
+        <h2 className="text-sm font-medium text-muted-foreground">Recent activity</h2>
+        <RecentActivityChart facts={activityFacts} />
       </div>
 
       <div className="flex w-full max-w-2xl flex-col gap-3">
