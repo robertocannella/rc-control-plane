@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { LogoMark } from "@/components/logo-mark";
 import type { ThemeName } from "@/lib/theme";
 
 export interface NavLink {
@@ -152,12 +153,7 @@ export function AppShell({
           reference's two-level layout instead of nav/account living inside
           the sidebar. */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/icons/icon-192.png"
-          alt="Control Plane"
-          className="h-8 w-8 rounded-md md:h-10 md:w-10"
-        />
+        <LogoMark className="h-8 w-auto text-foreground md:h-10" />
         <div className="flex items-center gap-1">
           <ThemeSwitcher initialTheme={initialTheme} />
           <div className="hidden md:block">

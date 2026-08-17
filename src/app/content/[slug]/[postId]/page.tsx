@@ -70,8 +70,21 @@ export default async function PostDetailPage({
   if (!post) notFound();
 
   const editable = canEditPostType(postType, session);
+
+  // Description fields are hidden from signed-out visitors regardless of
+  // the post type's own visibility setting — e.g. Time Tracker is
+  // "guest" visible (so its list/detail pages are reachable without
+  // signing in), but entry descriptions can contain client/work details
+  // not meant for anonymous viewers. Matches on the field key (the
+  // stable, always-lowercase identifier), not the label, since this app
+  // already uses "description" as its consistent key for this field
+  // across every post type that has one.
+  const visibleFields = session?.user
+    ? postType.fields
+    : postType.fields.filter((field) => field.key !== "description");
+
   const resolvedRelations = await resolveRelations(
-    postType.fields,
+    visibleFields,
     post.values,
     session,
   );
@@ -94,7 +107,7 @@ export default async function PostDetailPage({
         )}
       </div>
       <div className="flex w-full max-w-2xl flex-col divide-y divide-border rounded-md border border-border">
-        {postType.fields.map((field) => (
+        {visibleFields.map((field) => (
           <div key={field.key} className="flex flex-col gap-1 px-4 py-3">
             <span className="text-xs font-medium tracking-wide text-gray-500 uppercase">
               {field.label}
