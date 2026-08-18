@@ -102,6 +102,12 @@ export default async function PostDetailPage({
             >
               Edit
             </Link>
+            <Link
+              href={`/content/${slug}/new?duplicateFrom=${post.id}`}
+              className="text-sm text-accent hover:underline"
+            >
+              Duplicate
+            </Link>
             <PostDeleteButton slug={slug} postId={post.id} />
           </div>
         )}

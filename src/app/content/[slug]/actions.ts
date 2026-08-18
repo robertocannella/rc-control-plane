@@ -13,7 +13,7 @@ import {
 } from "@/lib/storage";
 import { loadAiSettings } from "@/lib/ai-settings";
 import { callAi } from "@/lib/ai-provider";
-import { getPostTitle } from "@/lib/post-title";
+import { getPostTitle, formatFieldValue } from "@/lib/post-title";
 
 export interface PostFormState {
   status: "idle" | "success" | "error";
@@ -251,6 +251,49 @@ export async function suggestRelationValueAction(
   }
 
   return { status: "success", id: match.id, label: match.label };
+}
+
+export interface DayEntry {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+}
+
+// Lets someone filling out a new time-tracker-shaped entry see what's
+// already logged for a given day, so they know what start time to use next
+// — generic to any post type with the "first two time fields + a date
+// field" shape (same convention as the overlap check in posts.ts), not
+// hardcoded to Time Tracker specifically.
+export async function listDayEntriesAction(
+  slug: string,
+  dateValue: string,
+): Promise<DayEntry[]> {
+  const session = await auth();
+  if (!session?.user) return [];
+
+  const postType = await getPostType(slug);
+  if (!postType || !canEditPostType(postType, session)) return [];
+
+  const [startField, endField] = postType.fields.filter((f) => f.type === "time");
+  const dateField = postType.fields.find((f) => f.type === "date");
+  if (!startField || !endField || !dateField) return [];
+
+  const posts = await listPosts(slug);
+  return posts
+    .filter((post) => post.values[dateField.key] === dateValue)
+    .filter((post) => typeof post.values[startField.key] === "string")
+    .sort((a, b) =>
+      (a.values[startField.key] as string).localeCompare(
+        b.values[startField.key] as string,
+      ),
+    )
+    .map((post) => ({
+      id: post.id,
+      title: getPostTitle(postType, post),
+      start: formatFieldValue("time", post.values[startField.key]),
+      end: formatFieldValue("time", post.values[endField.key]),
+    }));
 }
 
 export interface UploadImageState {

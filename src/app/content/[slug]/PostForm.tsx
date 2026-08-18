@@ -20,11 +20,16 @@ export function PostForm({
   slug,
   fields,
   post,
+  prefillValues,
   relationOptions,
 }: {
   slug: string;
   fields: FieldDef[];
   post?: Post;
+  // Default values for a brand-new post (e.g. "Duplicate" — see
+  // [postId]/page.tsx) — only meaningful when `post` is absent, since an
+  // existing post's own saved values always take precedence in edit mode.
+  prefillValues?: Record<string, unknown>;
   relationOptions?: Record<string, RelationFieldData>;
 }) {
   const action = post
@@ -96,7 +101,7 @@ export function PostForm({
             key={field.key}
             slug={slug}
             field={effectiveField}
-            value={post?.values[field.key]}
+            value={post?.values[field.key] ?? prefillValues?.[field.key]}
             relationData={relationOptions?.[field.key]}
           />
         );
