@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getPostType } from "@/lib/post-types";
@@ -47,7 +48,15 @@ export default async function EditPostPage({
         post={post}
         relationOptions={relationOptions}
       />
-      <PostDeleteButton slug={slug} postId={post.id} />
+      <div className="flex items-center gap-4">
+        <Link
+          href={`/content/${slug}/new?duplicateFrom=${post.id}`}
+          className="text-sm text-accent hover:underline"
+        >
+          Duplicate
+        </Link>
+        <PostDeleteButton slug={slug} postId={post.id} />
+      </div>
     </main>
   );
 }
