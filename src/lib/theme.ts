@@ -1,6 +1,13 @@
 export const THEME_COOKIE_NAME = "theme";
 
-export const THEME_NAMES = ["light", "dark", "nord", "dracula"] as const;
+export const THEME_NAMES = [
+  "light",
+  "dark",
+  "nord:light",
+  "nord:dark",
+  "dracula:light",
+  "dracula:dark",
+] as const;
 
 export type ThemeName = (typeof THEME_NAMES)[number];
 
