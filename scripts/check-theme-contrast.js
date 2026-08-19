@@ -38,17 +38,29 @@ const themes = {
     "muted-foreground": "#9aa0a6",
     accent: "#8ab4f8",
   },
-  nord: {
+  "nord:dark": {
     background: "#2e3440",
     foreground: "#d8dee9",
     "muted-foreground": "#81a1c1",
     accent: "#88c0d0",
   },
-  dracula: {
+  "nord:light": {
+    background: "#eceff4",
+    foreground: "#2e3440",
+    "muted-foreground": "#4c566a",
+    accent: "#4a6b8c",
+  },
+  "dracula:dark": {
     background: "#282a36",
     foreground: "#f8f8f2",
     "muted-foreground": "#6272a4",
     accent: "#bd93f9",
+  },
+  "dracula:light": {
+    background: "#f8f8f2",
+    foreground: "#282a36",
+    "muted-foreground": "#44475a",
+    accent: "#7c4de1",
   },
 };
 

@@ -7,8 +7,10 @@ import { THEME_COOKIE_NAME, THEME_NAMES, type ThemeName } from "@/lib/theme";
 const THEME_LABELS: Record<ThemeName, string> = {
   light: "Light",
   dark: "Dark",
-  nord: "Nord",
-  dracula: "Dracula",
+  "nord:light": "Nord Light",
+  "nord:dark": "Nord Dark",
+  "dracula:light": "Dracula Light",
+  "dracula:dark": "Dracula Dark",
 };
 
 // "System" is represented as `null` — no cookie, no data-theme attribute,

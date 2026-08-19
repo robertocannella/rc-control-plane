@@ -38,7 +38,7 @@
   --chart-series-other: #9aa0a6;
 }
 
-:root[data-theme="nord"] {
+:root[data-theme="nord:dark"] {
   --background: #2e3440;
   --surface: #3b4252;
   --foreground: #d8dee9;
@@ -52,7 +52,26 @@
   --chart-series-other: #81a1c1;
 }
 
-:root[data-theme="dracula"] {
+/* Nord has no official light mode - this inverts the palette's own
+   Snow Storm (light) family against Polar Night text, same approach
+   used by community "Nord Light" variants. Accent/chart hues are
+   darkened from their dark-theme values to clear contrast floors on a
+   light background. */
+:root[data-theme="nord:light"] {
+  --background: #eceff4;
+  --surface: #ffffff;
+  --foreground: #2e3440;
+  --muted-foreground: #4c566a;
+  --border: #d8dee9;
+  --accent: #4a6b8c;
+  --accent-foreground: #ffffff;
+  --chart-series-1: #33707e;
+  --chart-series-2: #b3572f;
+  --chart-series-3: #5a7a44;
+  --chart-series-other: #4c566a;
+}
+
+:root[data-theme="dracula:dark"] {
   --background: #282a36;
   --surface: #44475a;
   --foreground: #f8f8f2;
@@ -64,6 +83,23 @@
   --chart-series-2: #ffb86c;
   --chart-series-3: #50fa7b;
   --chart-series-other: #6272a4;
+}
+
+/* No official light Dracula spec - derived to pair with the dark
+   variant above using the same accent hues, darkened for contrast
+   against a light background. */
+:root[data-theme="dracula:light"] {
+  --background: #f8f8f2;
+  --surface: #ffffff;
+  --foreground: #282a36;
+  --muted-foreground: #44475a;
+  --border: #e3e3dc;
+  --accent: #7c4de1;
+  --accent-foreground: #ffffff;
+  --chart-series-1: #0f7d99;
+  --chart-series-2: #a6540e;
+  --chart-series-3: #1f7a48;
+  --chart-series-other: #44475a;
 }
 
 /* "System" (no explicit theme cookie yet) follows the OS preference,
